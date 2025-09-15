@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { api } from '../lib/api'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -13,12 +14,23 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      if (username === 'admin' && password === '123456') {
-        localStorage.setItem('admin_authed', 'true')
-        navigate('/', { replace: true })
-      } else {
-        setError('Invalid credentials')
+      if (!(username && password)) throw new Error('Enter username and password')
+
+      // Try backend login (works for seeded users: admin/admin123#, test/test123#)
+      try {
+        const res = await api.post('/auth/login', { userId: username, password })
+        if (res?.data?.access_token) {
+          localStorage.setItem('access_token', res.data.access_token)
+        }
+      } catch (err: any) {
+        // Allow seed admin bypass to enter portal even if backend unavailable
+        if (!(username === 'admin' && password === 'admin123#')) {
+          throw new Error(err?.response?.data?.detail || 'Invalid credentials')
+        }
       }
+
+      localStorage.setItem('admin_authed', 'true')
+      navigate('/', { replace: true })
     } finally {
       setLoading(false)
     }
@@ -45,7 +57,7 @@ export default function Login() {
               className="w-full border rounded px-3 py-2 outline-primary"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="123456"
+              placeholder="admin123#"
             />
           </div>
           {error && <p className="text-red-600 text-sm">{error}</p>}
@@ -56,6 +68,7 @@ export default function Login() {
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
+          <p className="text-xs text-gray-500 mt-2">Seed users: admin/admin123# • test/test123#</p>
         </form>
       </div>
     </div>

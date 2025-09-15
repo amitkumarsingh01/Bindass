@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from models import Contest, ContestCreate, PrizeStructure, HomeSlider, Withdrawal, WithdrawalStatus, User
-from auth import get_current_user
+from auth import get_current_user, verify_token
 from fastapi import Header
+from fastapi.security import HTTPAuthorizationCredentials
 from config import settings
 from database import get_database
 from bson import ObjectId
@@ -14,18 +15,26 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Simple admin check - in production, implement proper role-based access
-async def is_admin(x_admin_key: str = Header(None), current_user: User = Depends(get_current_user)):
-    """Check if user is admin via header override or userId prefix"""
-    # Allow requests that include a valid admin key header (for portal)
+async def is_admin(
+    x_admin_key: str | None = Header(None),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security)
+):
+    """Admin guard:
+    - If X-Admin-Key matches, allow without user token (used by admin portal)
+    - Else require a valid bearer token and userId starting with 'admin'
+    """
     if x_admin_key and x_admin_key == settings.admin_key:
-        return current_user
-    # Fallback: simple userId rule
-    if current_user.userId.startswith("admin"):
-        return current_user
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="Admin access required"
-    )
+        return True
+    # Require token otherwise
+    if not credentials:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    token_data = await verify_token(credentials)  # will raise if invalid
+    # Fetch user and verify prefix
+    database = get_database()
+    user = await database.users.find_one({"$or": [{"userId": token_data.userId}, {"phoneNumber": token_data.userId}]})
+    if not user or not user.get("userId", "").startswith("admin"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    return True
 
 @router.post("/contests", response_model=dict)
 async def create_contest(
