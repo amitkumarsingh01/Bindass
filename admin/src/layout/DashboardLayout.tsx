@@ -1,3 +1,4 @@
+import React, { useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 
 const nav = [
@@ -47,7 +48,7 @@ export default function DashboardLayout() {
 }
 
 function TopBar() {
-  const [val, setVal] = React.useState(localStorage.getItem('admin_userId') || 'admin')
+  const [val, setVal] = useState(localStorage.getItem('admin_userId') || 'admin')
   const apply = () => {
     localStorage.setItem('admin_userId', val || 'admin')
     window.location.reload()

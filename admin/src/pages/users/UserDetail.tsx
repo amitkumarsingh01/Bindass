@@ -51,7 +51,7 @@ export default function UserDetail() {
         {data.bankDetails && (
           <div className="mt-6">
             <p className="font-bold mb-2">Bank Details</p>
-            <pre className="bg-gray-50 p-3 rounded text-sm overflow-auto">{JSON.stringify(data.bankDetails, null, 2)}</p>
+            <pre className="bg-gray-50 p-3 rounded text-sm overflow-auto">{JSON.stringify(data.bankDetails, null, 2)}</pre>
           </div>
         )}
       </div>
