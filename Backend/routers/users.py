@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from models import User, BankDetails, BankDetailsCreate, UserResponse, UserCreate
 from auth import get_current_user, resolve_user
 from database import get_database
+from pymongo import ReturnDocument
 from bson import ObjectId
 import logging
 
@@ -72,7 +73,7 @@ async def add_bank_details(
                 },
             },
             upsert=True,
-            return_document=True,
+            return_document=ReturnDocument.AFTER,
         )
 
         # Some motor versions require a second read after upsert to get the doc
@@ -84,6 +85,9 @@ async def add_bank_details(
 
         out = doc.copy()
         out["id"] = str(out.pop("_id"))
+        # Normalize ObjectId fields for JSON safety
+        if isinstance(out.get("userId"), ObjectId):
+            out["userId"] = str(out["userId"])
         message = "Bank details saved"
         return {"message": message, "bankDetails": out}
     except HTTPException:
@@ -107,6 +111,8 @@ async def get_bank_details(current_user: User = Depends(resolve_user)):
     
     bank_details["id"] = str(bank_details["_id"])
     del bank_details["_id"]
+    if isinstance(bank_details.get("userId"), ObjectId):
+        bank_details["userId"] = str(bank_details["userId"])
     
     return bank_details
 

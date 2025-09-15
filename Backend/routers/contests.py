@@ -148,6 +148,16 @@ async def get_contest_leaderboard(
     cursor = database.purchased_seats.aggregate(pipeline)
     
     async for item in cursor:
+        # Normalize ObjectId fields for JSON encoding
+        if "_id" in item:
+            try:
+                from bson import ObjectId as _ObjectId
+                if isinstance(item["_id"], _ObjectId):
+                    item["userObjectId"] = str(item["_id"])  # optional
+                # remove raw _id from output to avoid encoder errors
+                item.pop("_id", None)
+            except Exception:
+                item.pop("_id", None)
         leaderboard.append(item)
     
     return {
