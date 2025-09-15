@@ -147,3 +147,57 @@ async def get_wallet_balance(current_user: User = Depends(resolve_user)):
         "walletBalance": current_user.walletBalance,
         "isActive": current_user.isActive
     }
+
+# Listing and lookup endpoints (no auth)
+
+@router.get("/")
+async def list_users(
+    q: str | None = None,
+    limit: int = 20,
+    skip: int = 0,
+    sort: str = "-createdAt"
+):
+    database = get_database()
+    query: dict = {}
+    if q:
+        query = {
+            "$or": [
+                {"userName": {"$regex": q, "$options": "i"}},
+                {"userId": {"$regex": q, "$options": "i"}},
+                {"email": {"$regex": q, "$options": "i"}},
+                {"phoneNumber": {"$regex": q, "$options": "i"}},
+            ]
+        }
+    sort_dir = -1 if sort.startswith('-') else 1
+    sort_field = sort[1:] if sort.startswith('-') else sort
+
+    total = await database.users.count_documents(query)
+    items = []
+    cursor = database.users.find(query).sort(sort_field, sort_dir).skip(skip).limit(limit)
+    async for u in cursor:
+        u_out = u.copy()
+        u_out["id"] = str(u_out.pop("_id"))
+        u_out.pop("password", None)
+        items.append(u_out)
+
+    return {"total": total, "limit": limit, "skip": skip, "items": items}
+
+
+@router.get("/{user_id}")
+async def get_user_by_id(user_id: str):
+    database = get_database()
+    user = await database.users.find_one({"userId": user_id})
+    if not user and ObjectId.is_valid(user_id):
+        user = await database.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    bank = await database.bank_details.find_one({"userId": user["_id"]})
+    out = user.copy()
+    out["id"] = str(out.pop("_id"))
+    out.pop("password", None)
+    if bank:
+        b = bank.copy()
+        b["id"] = str(b.pop("_id"))
+        out["bankDetails"] = b
+    return out
