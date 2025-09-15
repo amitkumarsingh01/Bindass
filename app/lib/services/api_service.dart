@@ -21,9 +21,20 @@ class ApiService {
 
   // Auth endpoints
   Future<Map<String, dynamic>> login(String userId, String password) async {
-    // No backend auth required now; we simply store userId
-    await _prefs.setString('user_id', userId);
-    return { 'userId': userId };
+    // Validate credentials against backend
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/login'),
+      headers: _headers,
+      body: jsonEncode({ 'userId': userId, 'password': password }),
+    );
+    if (response.statusCode == 200) {
+      // Persist identity locally for header-based endpoints
+      await _prefs.setString('user_id', userId);
+      await _prefs.setString('user_password', password);
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Login failed: ${response.body}');
+    }
   }
 
   Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
@@ -194,7 +205,8 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      final data = jsonDecode(response.body);
+      return data['bankDetails'] ?? {};
     } else {
       throw Exception('Failed to add bank details: ${response.body}');
     }

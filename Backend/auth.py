@@ -70,7 +70,8 @@ async def get_current_user(x_user_id: str | None = Header(None), token_data: Tok
     user = await database.users.find_one({
         "$or": [
             {"userId": candidate},
-            {"phoneNumber": candidate}
+            {"phoneNumber": candidate},
+            {"email": candidate}
         ]
     })
     if not user:
@@ -92,7 +93,8 @@ async def resolve_user(
     user = await database.users.find_one({
         "$or": [
             {"userId": chosen},
-            {"phoneNumber": chosen}
+            {"phoneNumber": chosen},
+            {"email": chosen}
         ]
     })
     if not user:

@@ -122,8 +122,9 @@ class WalletProvider with ChangeNotifier {
     _clearError();
 
     try {
-      await _apiService!.addBankDetails(bankData);
-      await loadBankDetails();
+      final res = await _apiService!.addBankDetails(bankData);
+      _bankDetails = res;
+      notifyListeners();
       return true;
     } catch (e) {
       _setError(e.toString());

@@ -104,7 +104,10 @@ async def add_bank_details(
             )
         message = "Bank details added successfully"
     
-    return {"message": message}
+    # Return current bank details
+    doc = await database.bank_details.find_one({"userId": current_user.id})
+    doc["id"] = str(doc.pop("_id"))
+    return {"message": message, "bankDetails": doc}
 
 @router.get("/bank-details")
 async def get_bank_details(current_user: User = Depends(resolve_user)):
