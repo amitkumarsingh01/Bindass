@@ -191,7 +191,7 @@ async def purchase_seats(
     # Start transaction
     try:
         # Insert purchased seats
-        await database.purchased_seats.insert_many(purchased_seats)
+        insert_result = await database.purchased_seats.insert_many(purchased_seats)
         
         # Update contest statistics
         await database.contests.update_one(
@@ -256,7 +256,8 @@ async def purchase_seats(
             "transactionId": transaction_id,
             "totalAmount": total_amount,
             "purchasedSeats": seat_purchase.seatNumbers,
-            "contestName": contest["contestName"]
+            "contestName": contest["contestName"],
+            "insertedCount": len(insert_result.inserted_ids)
         }
         
     except Exception as e:

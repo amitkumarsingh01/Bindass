@@ -23,7 +23,7 @@ class _ContestDetailScreenState extends State<ContestDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _loadContestData();
   }
 
@@ -61,6 +61,7 @@ class _ContestDetailScreenState extends State<ContestDetailScreen>
             Tab(text: 'Categories'),
             Tab(text: 'Leaderboard'),
             Tab(text: 'Winners'),
+            Tab(text: 'My Purchases'),
           ],
         ),
       ),
@@ -114,6 +115,7 @@ class _ContestDetailScreenState extends State<ContestDetailScreen>
               ),
               _LeaderboardTab(leaderboard: contestProvider.contestLeaderboard),
               _WinnersTab(winners: contestProvider.contestWinners),
+              _MyPurchasesTab(myPurchases: contestProvider.myPurchases),
             ],
           );
         },
@@ -455,6 +457,70 @@ class _WinnersTab extends StatelessWidget {
               ],
             ),
             isThreeLine: true,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MyPurchasesTab extends StatelessWidget {
+  final Map<String, dynamic>? myPurchases;
+
+  const _MyPurchasesTab({this.myPurchases});
+
+  @override
+  Widget build(BuildContext context) {
+    if (myPurchases == null || myPurchases!['purchases'] == null) {
+      return const Center(
+        child: Text('No purchases yet'),
+      );
+    }
+
+    final purchases = myPurchases!['purchases'] as List<dynamic>;
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: purchases.length,
+      itemBuilder: (context, index) {
+        final group = purchases[index];
+        final seats = (group['seats'] as List<dynamic>? ?? []).cast<int>();
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      group['categoryName']?.toString() ?? 'Category',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    Text(
+                      'Total: ${group['totalSeats'] ?? seats.length}',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: seats.map((n) => Chip(label: Text('#$n'))).toList(),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    'Amount: ₹${(group['totalAmount'] ?? 0).toString()}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

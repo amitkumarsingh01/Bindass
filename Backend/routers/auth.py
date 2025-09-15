@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from datetime import timedelta
-from models import UserCreate, UserLogin, UserResponse, Token, User
+from models import UserCreate, UserLogin, UserResponse, Token, User, UserRegisterSimple
 from auth import authenticate_user, create_access_token, get_password_hash, get_current_user
 from database import get_database
 from config import settings
@@ -50,6 +50,50 @@ async def register_user(user: UserCreate):
     del created_user["password"]
     
     return UserResponse(**created_user)
+
+@router.post("/register-simple", response_model=UserResponse)
+async def register_user_simple(payload: UserRegisterSimple):
+    """Minimal registration accepting email or phone and password. Generates defaults."""
+    database = get_database()
+
+    if not payload.email and not payload.phoneNumber:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provide email or phoneNumber")
+
+    # Normalize and pick userId
+    base_user_id = (payload.email or payload.phoneNumber).lower()
+
+    existing_user = await database.users.find_one({
+        "$or": [
+            {"userId": base_user_id},
+            {"email": payload.email} if payload.email else {},
+            {"phoneNumber": payload.phoneNumber} if payload.phoneNumber else {},
+        ]
+    })
+    if existing_user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists")
+
+    hashed_password = get_password_hash(payload.password)
+
+    doc = {
+        "userName": payload.userName or (payload.email or payload.phoneNumber),
+        "userId": base_user_id,
+        "email": payload.email or f"{base_user_id}@example.com",
+        "phoneNumber": payload.phoneNumber or "",
+        "password": hashed_password,
+        "profilePicture": None,
+        "city": "",
+        "state": "",
+        "walletBalance": 0.0,
+        "isActive": True,
+        "extraParameter1": None,
+    }
+
+    res = await database.users.insert_one(doc)
+    created = await database.users.find_one({"_id": res.inserted_id})
+    created["id"] = str(created["_id"])
+    del created["_id"]
+    del created["password"]
+    return UserResponse(**created)
 
 @router.post("/login", response_model=Token)
 async def login_user(user_credentials: UserLogin):

@@ -38,16 +38,22 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
-    // Keep calling backend registration to create user with password
+    // Prefer minimal registration endpoint with email/phone + password only
     final response = await http.post(
-      Uri.parse('$baseUrl/auth/register'),
+      Uri.parse('$baseUrl/auth/register-simple'),
       headers: _headers,
-      body: jsonEncode(userData),
+      body: jsonEncode({
+        'email': userData['email'],
+        'phoneNumber': userData['phoneNumber'],
+        'password': userData['password'],
+        'userName': userData['userName'],
+      }),
     );
     if (response.statusCode == 200) {
       // Also store credentials locally for header-based flows
-      if (userData['userId'] != null) {
-        await _prefs.setString('user_id', userData['userId']);
+      final identifier = userData['email'] ?? userData['phoneNumber'];
+      if (identifier != null) {
+        await _prefs.setString('user_id', identifier);
       }
       if (userData['password'] != null) {
         await _prefs.setString('user_password', userData['password']);

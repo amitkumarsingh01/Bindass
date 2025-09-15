@@ -154,6 +154,7 @@ class ContestProvider with ChangeNotifier {
       // Refresh contest data after purchase
       await loadContest(contestId);
       await loadContestCategories(contestId);
+      await loadMyPurchases(contestId);
       return true;
     } catch (e) {
       _setError(e.toString());

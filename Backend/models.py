@@ -310,6 +310,13 @@ class UserCreate(BaseModel):
     state: str
     extraParameter1: Optional[str] = None
 
+class UserRegisterSimple(BaseModel):
+    # Minimal registration: either email or phoneNumber is required, plus password
+    email: Optional[EmailStr] = None
+    phoneNumber: Optional[str] = None
+    password: str
+    userName: Optional[str] = None
+
 class UserLogin(BaseModel):
     # Accept any identifier: email, phoneNumber, or userId
     identifier: str

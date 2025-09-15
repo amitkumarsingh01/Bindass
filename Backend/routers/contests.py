@@ -255,9 +255,18 @@ async def get_my_contest_purchases(
     
     purchases = []
     cursor = database.purchased_seats.aggregate(pipeline)
-    
     async for purchase in cursor:
         purchases.append(purchase)
+
+    # Also return a flat list for convenience (seatNumber + categoryName)
+    flat = []
+    cursor2 = database.purchased_seats.find({
+        "contestId": ObjectId(contest_id),
+        "userId": current_user.id,
+        "status": "purchased"
+    }, {"seatNumber": 1, "categoryName": 1, "categoryId": 1, "ticketPrice": 1, "_id": 0})
+    async for doc in cursor2:
+        flat.append(doc)
     
     # Get contest details
     contest = await database.contests.find_one({"_id": ObjectId(contest_id)})
@@ -267,7 +276,8 @@ async def get_my_contest_purchases(
         "contestName": contest["contestName"] if contest else "Unknown",
         "userId": current_user.userId,
         "userName": current_user.userName,
-        "purchases": purchases
+        "purchases": purchases,
+        "purchasesFlat": flat
     }
 
 @router.get("/{contest_id}/prize-structure")
