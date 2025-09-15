@@ -2,7 +2,8 @@ from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
-from database import connect_to_mongo, close_mongo_connection
+from database import connect_to_mongo, close_mongo_connection, get_database
+from auth import get_password_hash
 from routers import auth, users, contests, seats, wallet, admin, notifications
 
 # Configure logging
@@ -13,6 +14,50 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Startup
     await connect_to_mongo()
+    # Seed default users if they don't exist
+    try:
+        db = get_database()
+        # Admin user
+        admin = await db.users.find_one({"userId": "admin"})
+        if not admin:
+            await db.users.insert_one({
+                "userName": "Administrator",
+                "userId": "admin",
+                "email": "admin@example.com",
+                "phoneNumber": "9000000000",
+                "password": get_password_hash("admin123#"),
+                "profilePicture": None,
+                "city": "",
+                "state": "",
+                "walletBalance": 0.0,
+                "isActive": True,
+                "extraParameter1": None,
+                "createdAt": __import__('datetime').datetime.now(),
+                "updatedAt": __import__('datetime').datetime.now(),
+            })
+            logger.info("Seeded default admin user: admin / admin123#")
+
+        # Test user
+        test_user = await db.users.find_one({"userId": "test"})
+        if not test_user:
+            await db.users.insert_one({
+                "userName": "Test User",
+                "userId": "test",
+                "email": "test@example.com",
+                "phoneNumber": "9000000001",
+                "password": get_password_hash("test123#"),
+                "profilePicture": None,
+                "city": "",
+                "state": "",
+                "walletBalance": 0.0,
+                "isActive": True,
+                "extraParameter1": None,
+                "createdAt": __import__('datetime').datetime.now(),
+                "updatedAt": __import__('datetime').datetime.now(),
+            })
+            logger.info("Seeded default test user: test / test123#")
+    except Exception as se:
+        logger.error(f"Error seeding initial users: {se}")
     yield
     # Shutdown
     await close_mongo_connection()

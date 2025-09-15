@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from models import Contest, ContestCreate, PrizeStructure, HomeSlider, Withdrawal, WithdrawalStatus, User
 from auth import get_current_user
+from fastapi import Header
+from config import settings
 from database import get_database
 from bson import ObjectId
 from datetime import datetime
@@ -12,15 +14,18 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Simple admin check - in production, implement proper role-based access
-def is_admin(current_user: User = Depends(get_current_user)):
-    """Check if user is admin (simple implementation)"""
-    # In production, check user role from database
-    if not current_user.userId.startswith("admin"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
-    return current_user
+async def is_admin(x_admin_key: str = Header(None), current_user: User = Depends(get_current_user)):
+    """Check if user is admin via header override or userId prefix"""
+    # Allow requests that include a valid admin key header (for portal)
+    if x_admin_key and x_admin_key == settings.admin_key:
+        return current_user
+    # Fallback: simple userId rule
+    if current_user.userId.startswith("admin"):
+        return current_user
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Admin access required"
+    )
 
 @router.post("/contests", response_model=dict)
 async def create_contest(

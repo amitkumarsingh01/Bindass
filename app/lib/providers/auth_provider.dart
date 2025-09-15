@@ -1,0 +1,114 @@
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/api_service.dart';
+
+class AuthProvider with ChangeNotifier {
+  final SharedPreferences _prefs;
+  late ApiService _apiService;
+  
+  bool _isLoading = false;
+  bool _isAuthenticated = false;
+  Map<String, dynamic>? _user;
+  String? _error;
+
+  AuthProvider(this._prefs) {
+    _apiService = ApiService(_prefs);
+    _checkAuthStatus();
+  }
+
+  ApiService get apiService => _apiService;
+
+  bool get isLoading => _isLoading;
+  bool get isAuthenticated => _isAuthenticated;
+  Map<String, dynamic>? get user => _user;
+  String? get error => _error;
+
+  void _checkAuthStatus() {
+    final token = _prefs.getString('access_token');
+    if (token != null) {
+      _isAuthenticated = true;
+      _loadUserData();
+    }
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      _user = await _apiService.getCurrentUser();
+      notifyListeners();
+    } catch (e) {
+      await logout();
+    }
+  }
+
+  Future<bool> login(String userId, String password) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      await _apiService.login(userId, password);
+      _isAuthenticated = true;
+      await _loadUserData();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<bool> register(Map<String, dynamic> userData) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      await _apiService.register(userData);
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> logout() async {
+    await _apiService.logout();
+    _isAuthenticated = false;
+    _user = null;
+    _clearError();
+    notifyListeners();
+  }
+
+  Future<bool> updateProfile(Map<String, dynamic> profileData) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      _user = await _apiService.updateProfile(profileData);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+
+  void _setError(String error) {
+    _error = error;
+    notifyListeners();
+  }
+
+  void _clearError() {
+    _error = null;
+    notifyListeners();
+  }
+}
