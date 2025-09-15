@@ -115,14 +115,10 @@ async def get_user_with_password(
     x_user_password: str | None = Header(None),
     token_data: TokenData | None = Depends(verify_token)
 ):
-    """Resolve user (query/header) and require password via header `X-User-Password`.
-    Useful for wallet add/withdraw without bearer tokens.
+    """Resolve user (query/header). Password is accepted but NOT validated as requested.
+    This keeps the header shape consistent while removing security checks.
     """
     u = await resolve_user(userId=userId, x_user_id=x_user_id, token_data=token_data)
-    if not x_user_password:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Password required")
-    if not _password_matches(u.password, x_user_password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password")
     return u
 
 async def authenticate_user(userId: str, password: str):

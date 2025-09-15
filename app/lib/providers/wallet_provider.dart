@@ -58,13 +58,16 @@ class WalletProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> addMoneyToWallet(double amount, String description, String password) async {
+  Future<bool> addMoneyToWallet(double amount, String description) async {
     if (_apiService == null) return false;
     
     _setLoading(true);
     _clearError();
 
     try {
+      // Fetch stored password from login
+      final prefs = await SharedPreferences.getInstance();
+      final password = prefs.getString('user_password') ?? '';
       await _apiService!.addMoneyToWallet(amount, description, password);
       await loadWalletBalance();
       await loadTransactions();

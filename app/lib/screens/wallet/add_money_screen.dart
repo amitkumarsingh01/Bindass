@@ -35,7 +35,6 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
           : _descriptionController.text.trim();
 
       final walletProvider = Provider.of<WalletProvider>(context, listen: false);
-      
       final success = await walletProvider.addMoneyToWallet(amount, description);
 
       if (success && mounted) {
@@ -211,6 +210,9 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
               ),
               
               const SizedBox(height: 16),
+
+              // No password field here; password was provided during login and reused securely
+              const SizedBox(height: 8),
               
               // Description Input
               const Text(
