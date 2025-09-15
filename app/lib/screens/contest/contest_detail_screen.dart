@@ -111,6 +111,8 @@ class _ContestDetailScreenState extends State<ContestDetailScreen>
               _DetailsTab(contest: contestProvider.currentContest!),
               _CategoriesTab(
                 contestId: widget.contestId,
+                contestName: contestProvider.currentContest?['contestName'] ?? 'Contest',
+                ticketPrice: (contestProvider.currentContest?['ticketPrice'] ?? 0).toDouble(),
                 categories: contestProvider.contestCategories?['categories'] ?? [],
               ),
               _LeaderboardTab(leaderboard: contestProvider.contestLeaderboard),
@@ -255,10 +257,14 @@ class _DetailsTab extends StatelessWidget {
 
 class _CategoriesTab extends StatelessWidget {
   final String contestId;
+  final String contestName;
+  final double ticketPrice;
   final List<dynamic> categories;
 
   const _CategoriesTab({
     required this.contestId,
+    required this.contestName,
+    required this.ticketPrice,
     required this.categories,
   });
 
@@ -302,8 +308,8 @@ class _CategoriesTab extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (context) => SeatSelectionScreen(
                       contestId: contestId,
-                      contestName: 'Contest',
-                      ticketPrice: 100.0, // This should come from contest data
+                      contestName: contestName,
+                      ticketPrice: ticketPrice,
                       categoryId: category['categoryId'],
                     ),
                   ),
