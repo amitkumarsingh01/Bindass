@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 
 const nav = [
   { to: '/', label: 'Dashboard' },
+  { to: '/users', label: 'Users' },
   { to: '/contests', label: 'Contests' },
   { to: '/withdrawals', label: 'Withdrawals' },
   { to: '/sliders', label: 'Home Sliders' },
@@ -12,6 +13,7 @@ export default function DashboardLayout() {
 
   const logout = () => {
     localStorage.removeItem('admin_authed')
+    localStorage.removeItem('admin_userId')
     navigate('/login', { replace: true })
   }
 
@@ -37,8 +39,27 @@ export default function DashboardLayout() {
         <button onClick={logout} className="mt-8 w-full bg-gray-100 hover:bg-gray-200 rounded py-2">Logout</button>
       </aside>
       <main className="bg-gray-50 p-6">
+        <TopBar />
         <Outlet />
       </main>
+    </div>
+  )
+}
+
+function TopBar() {
+  const [val, setVal] = React.useState(localStorage.getItem('admin_userId') || 'admin')
+  const apply = () => {
+    localStorage.setItem('admin_userId', val || 'admin')
+    window.location.reload()
+  }
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <div />
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-gray-600">Impersonate userId</span>
+        <input className="border rounded px-2 py-1" value={val} onChange={e=>setVal(e.target.value)} placeholder="userId" />
+        <button onClick={apply} className="px-2 py-1 bg-primary text-white rounded">Apply</button>
+      </div>
     </div>
   )
 }

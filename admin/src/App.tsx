@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import Login from './auth/Login'
 import DashboardLayout from './layout/DashboardLayout'
 import Dashboard from './pages/Dashboard'
+import Users from './pages/users/Users'
+import UserDetail from './pages/users/UserDetail'
 import Contests from './pages/contests/Contests'
 import CreateContest from './pages/contests/CreateContest'
 import PrizeStructure from './pages/contests/PrizeStructure'
@@ -15,6 +17,8 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<RequireAuth><DashboardLayout /></RequireAuth>}>
         <Route index element={<Dashboard />} />
+        <Route path="users" element={<Users />} />
+        <Route path="users/:id" element={<UserDetail />} />
         <Route path="contests" element={<Contests />} />
         <Route path="contests/create" element={<CreateContest />} />
         <Route path="contests/:id/prize-structure" element={<PrizeStructure />} />
