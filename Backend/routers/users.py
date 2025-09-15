@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, status
-from models import User, BankDetails, BankDetailsCreate, UserResponse
+from models import User, BankDetails, BankDetailsCreate, UserResponse, UserCreate
 from auth import get_current_user, resolve_user
 from database import get_database
 from bson import ObjectId
@@ -201,3 +201,65 @@ async def get_user_by_id(user_id: str):
         b["id"] = str(b.pop("_id"))
         out["bankDetails"] = b
     return out
+
+
+# -------------------------------
+# Basic admin-style user mutation
+# -------------------------------
+
+@router.post("/")
+async def create_user(payload: UserCreate):
+    database = get_database()
+    exists = await database.users.find_one({
+        "$or": [
+            {"userId": payload.userId},
+            {"email": payload.email},
+            {"phoneNumber": payload.phoneNumber},
+        ]
+    })
+    if exists:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists")
+
+    doc = payload.dict()
+    # Do NOT hash because security removed; if you prefer hashed, I can wire it back
+    doc["walletBalance"] = 0.0
+    doc["isActive"] = True
+    from datetime import datetime
+    doc["createdAt"] = datetime.now()
+    doc["updatedAt"] = datetime.now()
+
+    res = await database.users.insert_one(doc)
+    return {"id": str(res.inserted_id)}
+
+
+@router.put("/{user_id}")
+async def update_user(user_id: str, update: dict):
+    database = get_database()
+    filter_q = {"userId": user_id}
+    if ObjectId.is_valid(user_id):
+        filter_q = {"_id": ObjectId(user_id)}
+
+    update = {k: v for k, v in (update or {}).items() if k not in {"_id", "id", "password"}}
+    if not update:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
+    from datetime import datetime
+    update["updatedAt"] = datetime.now()
+    res = await database.users.update_one(filter_q, {"$set": update})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return {"updated": res.modified_count}
+
+
+@router.delete("/{user_id}")
+async def delete_user(user_id: str):
+    database = get_database()
+    filter_q = {"userId": user_id}
+    if ObjectId.is_valid(user_id):
+        filter_q = {"_id": ObjectId(user_id)}
+    # cascade deletes minimal (bank details)
+    user = await database.users.find_one(filter_q)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    await database.bank_details.delete_many({"userId": user["_id"]})
+    res = await database.users.delete_one(filter_q)
+    return {"deleted": res.deleted_count}
