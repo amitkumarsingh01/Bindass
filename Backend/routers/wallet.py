@@ -62,14 +62,16 @@ async def get_wallet_transactions(
 
 @router.post("/add-money")
 async def add_money_to_wallet(
-    amount: float = 0,
-    description: str = "Wallet top-up",
+    payload: dict,
     current_user: User = Depends(get_user_with_password)
 ):
     """Add money to user's wallet - minimal validation."""
     database = get_database()
+    amount = 0.0
+    description = "Wallet top-up"
     try:
-        amount = float(amount)
+        amount = float(payload.get("amount", 0))
+        description = payload.get("description", description)
     except Exception:
         amount = 0
     if amount < 0:

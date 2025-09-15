@@ -54,7 +54,8 @@ async def register_user(user: UserCreate):
 @router.post("/login", response_model=Token)
 async def login_user(user_credentials: UserLogin):
     """Login user and return access token"""
-    user = await authenticate_user(user_credentials.userId, user_credentials.password)
+    # identifier can be email / phoneNumber / userId
+    user = await authenticate_user(user_credentials.identifier, user_credentials.password)
     
     if not user:
         raise HTTPException(

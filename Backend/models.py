@@ -311,7 +311,8 @@ class UserCreate(BaseModel):
     extraParameter1: Optional[str] = None
 
 class UserLogin(BaseModel):
-    userId: str  # Can be userId or phoneNumber
+    # Accept any identifier: email, phoneNumber, or userId
+    identifier: str
     password: str
 
 class UserResponse(BaseModel):

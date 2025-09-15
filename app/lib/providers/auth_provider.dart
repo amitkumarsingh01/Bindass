@@ -40,12 +40,12 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> login(String userId, String password) async {
+  Future<bool> login(String identifier, String password) async {
     _setLoading(true);
     _clearError();
 
     try {
-      await _apiService.login(userId, password);
+      await _apiService.login(identifier, password);
       // Persist password for subsequent privileged actions (e.g., wallet add/withdraw)
       await _prefs.setString('user_password', password);
       _isAuthenticated = true;

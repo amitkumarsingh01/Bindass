@@ -20,16 +20,16 @@ class ApiService {
   }
 
   // Auth endpoints
-  Future<Map<String, dynamic>> login(String userId, String password) async {
+  Future<Map<String, dynamic>> login(String identifier, String password) async {
     // Validate credentials against backend
     final response = await http.post(
       Uri.parse('$baseUrl/auth/login'),
       headers: _headers,
-      body: jsonEncode({ 'userId': userId, 'password': password }),
+      body: jsonEncode({ 'identifier': identifier, 'password': password }),
     );
     if (response.statusCode == 200) {
       // Persist identity locally for header-based endpoints
-      await _prefs.setString('user_id', userId);
+      await _prefs.setString('user_id', identifier);
       await _prefs.setString('user_password', password);
       return jsonDecode(response.body);
     } else {

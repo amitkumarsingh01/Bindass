@@ -117,21 +117,26 @@ async def get_user_with_password(
     x_user_password: str | None = Header(None),
     token_data: TokenData | None = Depends(verify_token)
 ):
-    """Resolve user (query/header). Password is accepted but NOT validated as requested.
-    This keeps the header shape consistent while removing security checks.
-    """
+    """Resolve user (query/header) and VERIFY password."""
     u = await resolve_user(userId=userId, x_user_id=x_user_id, token_data=token_data)
+    if not x_user_password:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Password required")
+    database = get_database()
+    user_doc = await database.users.find_one({"_id": u.id})
+    if not user_doc or not verify_password(x_user_password, user_doc.get("password", "")):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password")
     return u
 
 async def authenticate_user(userId: str, password: str):
-    """Authenticate user with userId/phoneNumber and password"""
+    """Authenticate user with email/phoneNumber/userId and password"""
     database = get_database()
     
-    # Try to find user by userId first, then by phoneNumber
+    # Try to find user by any identifier
     user = await database.users.find_one({
         "$or": [
             {"userId": userId},
-            {"phoneNumber": userId}
+            {"phoneNumber": userId},
+            {"email": userId}
         ]
     })
     
