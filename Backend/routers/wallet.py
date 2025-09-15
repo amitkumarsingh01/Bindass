@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from models import User, WalletTransaction, Withdrawal, WithdrawalCreate, TransactionType, TransactionCategory, TransactionStatus, WithdrawalMethod, WithdrawalStatus
-from auth import resolve_user
+from auth import resolve_user, get_user_with_password
 from database import get_database
 from bson import ObjectId
 from datetime import datetime
@@ -62,31 +62,25 @@ async def get_wallet_transactions(
 
 @router.post("/add-money")
 async def add_money_to_wallet(
-    amount: float,
+    amount: float = 0,
     description: str = "Wallet top-up",
-    current_user: User = Depends(resolve_user)
+    current_user: User = Depends(get_user_with_password)
 ):
-    """Add money to user's wallet"""
+    """Add money to user's wallet - minimal validation."""
     database = get_database()
-    
-    if amount <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Amount must be greater than 0"
-        )
-    
-    if amount > 100000:  # Maximum limit
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Amount exceeds maximum limit of ₹1,00,000"
-        )
+    try:
+        amount = float(amount)
+    except Exception:
+        amount = 0
+    if amount < 0:
+        amount = 0
     
     # Generate transaction ID
     transaction_id = str(uuid.uuid4())
     
     try:
         # Update wallet balance
-        new_balance = current_user.walletBalance + amount
+        new_balance = (current_user.walletBalance or 0) + amount
         await database.users.update_one(
             {"_id": current_user.id},
             {"$set": {"walletBalance": new_balance}}
@@ -100,7 +94,7 @@ async def add_money_to_wallet(
             "amount": amount,
             "description": description,
             "category": TransactionCategory.DEPOSIT,
-            "balanceBefore": current_user.walletBalance,
+            "balanceBefore": current_user.walletBalance or 0,
             "balanceAfter": new_balance,
             "status": TransactionStatus.COMPLETED,
             "createdAt": datetime.now()

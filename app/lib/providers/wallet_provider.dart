@@ -58,14 +58,14 @@ class WalletProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> addMoneyToWallet(double amount, String description) async {
+  Future<bool> addMoneyToWallet(double amount, String description, String password) async {
     if (_apiService == null) return false;
     
     _setLoading(true);
     _clearError();
 
     try {
-      await _apiService!.addMoneyToWallet(amount, description);
+      await _apiService!.addMoneyToWallet(amount, description, password);
       await loadWalletBalance();
       await loadTransactions();
       return true;

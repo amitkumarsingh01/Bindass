@@ -24,8 +24,8 @@ class AuthProvider with ChangeNotifier {
   String? get error => _error;
 
   void _checkAuthStatus() {
-    final token = _prefs.getString('access_token');
-    if (token != null) {
+    final userId = _prefs.getString('user_id');
+    if (userId != null && userId.isNotEmpty) {
       _isAuthenticated = true;
       _loadUserData();
     }
@@ -46,6 +46,8 @@ class AuthProvider with ChangeNotifier {
 
     try {
       await _apiService.login(userId, password);
+      // Persist password for subsequent privileged actions (e.g., wallet add/withdraw)
+      await _prefs.setString('user_password', password);
       _isAuthenticated = true;
       await _loadUserData();
       notifyListeners();

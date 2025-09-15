@@ -10,43 +10,37 @@ class ApiService {
     _prefs = prefs;
   }
 
-  // Get auth headers
+  // Headers: userId based access
   Map<String, String> get _headers {
-    final token = _prefs.getString('access_token');
+    final userId = _prefs.getString('user_id') ?? 'guest';
     return {
       'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
+      'X-User-Id': userId,
     };
   }
 
   // Auth endpoints
   Future<Map<String, dynamic>> login(String userId, String password) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/login'),
-      headers: _headers,
-      body: jsonEncode({
-        'userId': userId,
-        'password': password,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      await _prefs.setString('access_token', data['access_token']);
-      return data;
-    } else {
-      throw Exception('Login failed: ${response.body}');
-    }
+    // No backend auth required now; we simply store userId
+    await _prefs.setString('user_id', userId);
+    return { 'userId': userId };
   }
 
   Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
+    // Keep calling backend registration to create user with password
     final response = await http.post(
       Uri.parse('$baseUrl/auth/register'),
       headers: _headers,
       body: jsonEncode(userData),
     );
-
     if (response.statusCode == 200) {
+      // Also store credentials locally for header-based flows
+      if (userData['userId'] != null) {
+        await _prefs.setString('user_id', userData['userId']);
+      }
+      if (userData['password'] != null) {
+        await _prefs.setString('user_password', userData['password']);
+      }
       return jsonDecode(response.body);
     } else {
       throw Exception('Registration failed: ${response.body}');
@@ -246,14 +240,14 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> addMoneyToWallet(double amount, String description) async {
+  Future<Map<String, dynamic>> addMoneyToWallet(double amount, String description, String password) async {
     final response = await http.post(
       Uri.parse('$baseUrl/wallet/add-money'),
-      headers: _headers,
-      body: jsonEncode({
-        'amount': amount,
-        'description': description,
-      }),
+      headers: {
+        ..._headers,
+        'X-User-Password': password,
+      },
+      body: jsonEncode({ 'amount': amount, 'description': description }),
     );
 
     if (response.statusCode == 200) {
@@ -267,11 +261,7 @@ class ApiService {
     final response = await http.post(
       Uri.parse('$baseUrl/wallet/withdraw'),
       headers: _headers,
-      body: jsonEncode({
-        'amount': amount,
-        'bank_details_id': bankDetailsId,
-        'withdrawal_method': withdrawalMethod,
-      }),
+      body: jsonEncode({ 'amount': amount, 'bank_details_id': bankDetailsId, 'withdrawal_method': withdrawalMethod }),
     );
 
     if (response.statusCode == 200) {

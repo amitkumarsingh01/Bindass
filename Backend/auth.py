@@ -99,6 +99,32 @@ async def resolve_user(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return User(**user)
 
+def _password_matches(stored: str, provided: str) -> bool:
+    if not provided:
+        return False
+    try:
+        if stored and stored.startswith('$2'):
+            return pwd_context.verify(provided, stored)
+    except Exception:
+        pass
+    return stored == provided
+
+async def get_user_with_password(
+    userId: str | None = Query(None),
+    x_user_id: str | None = Header(None),
+    x_user_password: str | None = Header(None),
+    token_data: TokenData | None = Depends(verify_token)
+):
+    """Resolve user (query/header) and require password via header `X-User-Password`.
+    Useful for wallet add/withdraw without bearer tokens.
+    """
+    u = await resolve_user(userId=userId, x_user_id=x_user_id, token_data=token_data)
+    if not x_user_password:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Password required")
+    if not _password_matches(u.password, x_user_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password")
+    return u
+
 async def authenticate_user(userId: str, password: str):
     """Authenticate user with userId/phoneNumber and password"""
     database = get_database()
