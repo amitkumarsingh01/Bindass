@@ -62,17 +62,21 @@ async def register_user_simple(payload: UserRegisterSimple):
     # Normalize and pick userId
     base_user_id = (payload.email or payload.phoneNumber).lower()
 
-    existing_user = await database.users.find_one({
-        "$or": [
-            {"userId": base_user_id},
-            {"email": payload.email} if payload.email else {},
-            {"phoneNumber": payload.phoneNumber} if payload.phoneNumber else {},
-        ]
-    })
+    # Build OR list only with present fields (avoid empty dict that matches everything)
+    or_list = [{"userId": base_user_id}]
+    if payload.email:
+        or_list.append({"email": payload.email})
+    if payload.phoneNumber:
+        or_list.append({"phoneNumber": payload.phoneNumber})
+
+    existing_user = await database.users.find_one({"$or": or_list})
     if existing_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists")
 
     hashed_password = get_password_hash(payload.password)
+
+    from datetime import datetime
+    now = datetime.now()
 
     doc = {
         "userName": payload.userName or (payload.email or payload.phoneNumber),
@@ -86,6 +90,8 @@ async def register_user_simple(payload: UserRegisterSimple):
         "walletBalance": 0.0,
         "isActive": True,
         "extraParameter1": None,
+        "createdAt": now,
+        "updatedAt": now,
     }
 
     res = await database.users.insert_one(doc)
