@@ -119,13 +119,18 @@ async def add_money_to_wallet(
 
 @router.post("/withdraw")
 async def request_withdrawal(
-    amount: float,
-    bank_details_id: str,
-    withdrawal_method: WithdrawalMethod = WithdrawalMethod.BANK_TRANSFER,
+    payload: dict,
     current_user: User = Depends(resolve_user)
 ):
     """Request withdrawal from wallet"""
     database = get_database()
+    try:
+        amount = float(payload.get("amount", 0))
+        bank_details_id = payload.get("bank_details_id", "")
+        method_value = payload.get("withdrawal_method", WithdrawalMethod.BANK_TRANSFER)
+        withdrawal_method = WithdrawalMethod(method_value)
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid payload")
     
     if amount <= 0:
         raise HTTPException(

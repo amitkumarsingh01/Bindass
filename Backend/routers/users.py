@@ -18,53 +18,33 @@ async def get_user_profile(current_user: User = Depends(resolve_user)):
 
 @router.put("/profile", response_model=UserResponse)
 async def update_user_profile(
-    userName: str = None,
-    city: str = None,
-    state: str = None,
-    profilePicture: str = None,
-    extraParameter1: str = None,
+    update: dict,
     current_user: User = Depends(resolve_user)
 ):
-    """Update user profile information"""
+    """Update user profile information (accepts JSON body)."""
     database = get_database()
-    
-    update_data = {}
-    if userName is not None:
-        update_data["userName"] = userName
-    if city is not None:
-        update_data["city"] = city
-    if state is not None:
-        update_data["state"] = state
-    if profilePicture is not None:
-        update_data["profilePicture"] = profilePicture
-    if extraParameter1 is not None:
-        update_data["extraParameter1"] = extraParameter1
-    
+    from datetime import datetime
+
+    allowed_fields = {"userName", "city", "state", "profilePicture", "extraParameter1"}
+    update_data = {k: v for k, v in (update or {}).items() if k in allowed_fields}
+
     if not update_data:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No fields to update"
-        )
-    
-    update_data["updatedAt"] = current_user.updatedAt
-    
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
+
+    update_data["updatedAt"] = datetime.now()
+
     result = await database.users.update_one(
         {"_id": current_user.id},
         {"$set": update_data}
     )
-    
-    if result.modified_count == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Failed to update profile"
-        )
-    
-    # Fetch updated user
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
     updated_user = await database.users.find_one({"_id": current_user.id})
     user_dict = User(**updated_user).dict()
     user_dict["id"] = str(user_dict["id"])
     del user_dict["password"]
-    
     return UserResponse(**user_dict)
 
 @router.post("/bank-details")
@@ -72,42 +52,45 @@ async def add_bank_details(
     bank_details: BankDetailsCreate,
     current_user: User = Depends(resolve_user)
 ):
-    """Add or update bank details for user"""
+    """Add or update bank details for user (idempotent upsert)."""
     database = get_database()
-    
-    bank_details_dict = bank_details.dict()
-    bank_details_dict["userId"] = current_user.id
-    bank_details_dict["isVerified"] = False
-    
-    # Check if user already has bank details
-    existing_bank = await database.bank_details.find_one({"userId": current_user.id})
-    
-    if existing_bank:
-        # Update existing bank details
-        result = await database.bank_details.update_one(
+    from datetime import datetime
+
+    try:
+        updates = bank_details.dict()
+        updates["isVerified"] = False
+        updates["updatedAt"] = datetime.now()
+
+        # Upsert by userId, set createdAt only on insert
+        doc = await database.bank_details.find_one_and_update(
             {"userId": current_user.id},
-            {"$set": bank_details_dict}
+            {
+                "$set": updates,
+                "$setOnInsert": {
+                    "userId": current_user.id,
+                    "createdAt": datetime.now(),
+                },
+            },
+            upsert=True,
+            return_document=True,
         )
-        if result.modified_count == 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to update bank details"
-            )
-        message = "Bank details updated successfully"
-    else:
-        # Create new bank details
-        result = await database.bank_details.insert_one(bank_details_dict)
-        if not result.inserted_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to add bank details"
-            )
-        message = "Bank details added successfully"
-    
-    # Return current bank details
-    doc = await database.bank_details.find_one({"userId": current_user.id})
-    doc["id"] = str(doc.pop("_id"))
-    return {"message": message, "bankDetails": doc}
+
+        # Some motor versions require a second read after upsert to get the doc
+        if not doc:
+            doc = await database.bank_details.find_one({"userId": current_user.id})
+
+        if not doc:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to save bank details")
+
+        out = doc.copy()
+        out["id"] = str(out.pop("_id"))
+        message = "Bank details saved"
+        return {"message": message, "bankDetails": out}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error saving bank details for user {current_user.userId}: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal error saving bank details")
 
 @router.get("/bank-details")
 async def get_bank_details(current_user: User = Depends(resolve_user)):
