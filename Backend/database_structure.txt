@@ -1,0 +1,733 @@
+// BINDASS GRAND - MongoDB Database Structure
+
+// 1. USERS Collection
+{
+  _id: ObjectId(),
+  userName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  userId: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true
+  },
+  phoneNumber: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true
+  },
+  password: {
+    type: String,
+    required: true
+  },
+  profilePicture: {
+    type: String,
+    default: null
+  },
+  city: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  state: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  walletBalance: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  extraParameter1: String, // As mentioned in requirements
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+}
+
+// 2. BANK_DETAILS Collection
+{
+  _id: ObjectId(),
+  userId: {
+    type: ObjectId,
+    ref: 'users',
+    required: true
+  },
+  accountNumber: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  ifscCode: {
+    type: String,
+    required: true,
+    trim: true,
+    uppercase: true
+  },
+  bankName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  accountHolderName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  place: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  upiId: {
+    type: String,
+    trim: true
+  },
+  extraParameter1: String, // As mentioned in requirements
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+}
+
+// 3. CONTESTS Collection
+{
+  _id: ObjectId(),
+  contestName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  totalPrizeMoney: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  ticketPrice: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  totalSeats: {
+    type: Number,
+    default: 10000,
+    required: true
+  },
+  availableSeats: {
+    type: Number,
+    default: 10000,
+    required: true
+  },
+  purchasedSeats: {
+    type: Number,
+    default: 0
+  },
+  totalWinners: {
+    type: Number,
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['active', 'upcoming', 'completed', 'cancelled'],
+    default: 'active'
+  },
+  contestStartDate: {
+    type: Date,
+    required: true
+  },
+  contestEndDate: {
+    type: Date,
+    required: true
+  },
+  drawDate: {
+    type: Date,
+    required: true
+  },
+  isDrawCompleted: {
+    type: Boolean,
+    default: false
+  },
+  categories: [{
+    categoryId: {
+      type: Number,
+      required: true
+    },
+    categoryName: {
+      type: String,
+      required: true,
+      enum: ['Bike', 'Auto', 'Car', 'Jeep', 'Van', 'Bus', 'Lorry', 'Train', 'Helicopter', 'Airplane']
+    },
+    seatRangeStart: {
+      type: Number,
+      required: true
+    },
+    seatRangeEnd: {
+      type: Number,
+      required: true
+    },
+    totalSeats: {
+      type: Number,
+      required: true
+    },
+    availableSeats: {
+      type: Number,
+      required: true
+    },
+    purchasedSeats: {
+      type: Number,
+      default: 0
+    }
+  }],
+  // Default categories structure
+  // 1. Bike: 1-1000, 2. Auto: 1001-2000, 3. Car: 2001-3000, 
+  // 4. Jeep: 3001-4000, 5. Van: 4001-5000, 6. Bus: 5001-6000,
+  // 7. Lorry: 6001-7000, 8. Train: 7001-8000, 
+  // 9. Helicopter: 8001-9000, 10. Airplane: 9001-10000
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+}
+
+// 4. PURCHASED_SEATS Collection
+{
+  _id: ObjectId(),
+  contestId: {
+    type: ObjectId,
+    ref: 'contests',
+    required: true
+  },
+  userId: {
+    type: ObjectId,
+    ref: 'users',
+    required: true
+  },
+  seatNumber: {
+    type: Number,
+    required: true,
+    min: 1,
+    max: 10000
+  },
+  categoryId: {
+    type: Number,
+    required: true
+  },
+  categoryName: {
+    type: String,
+    required: true
+  },
+  ticketPrice: {
+    type: Number,
+    required: true
+  },
+  purchaseDate: {
+    type: Date,
+    default: Date.now
+  },
+  transactionId: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  paymentMethod: {
+    type: String,
+    enum: ['wallet', 'upi', 'card', 'netbanking'],
+    default: 'wallet'
+  },
+  status: {
+    type: String,
+    enum: ['purchased', 'refunded', 'cancelled'],
+    default: 'purchased'
+  },
+  isWinner: {
+    type: Boolean,
+    default: false
+  },
+  prizeAmount: {
+    type: Number,
+    default: 0
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+}
+
+// 5. PRIZE_STRUCTURE Collection
+{
+  _id: ObjectId(),
+  contestId: {
+    type: ObjectId,
+    ref: 'contests',
+    required: true
+  },
+  prizeRank: {
+    type: Number,
+    required: true
+  },
+  prizeAmount: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  numberOfWinners: {
+    type: Number,
+    required: true,
+    min: 1
+  },
+  prizeDescription: {
+    type: String,
+    trim: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+}
+
+// 6. WINNERS Collection
+{
+  _id: ObjectId(),
+  contestId: {
+    type: ObjectId,
+    ref: 'contests',
+    required: true
+  },
+  userId: {
+    type: ObjectId,
+    ref: 'users',
+    required: true
+  },
+  seatNumber: {
+    type: Number,
+    required: true
+  },
+  categoryName: {
+    type: String,
+    required: true
+  },
+  prizeRank: {
+    type: Number,
+    required: true
+  },
+  prizeAmount: {
+    type: Number,
+    required: true
+  },
+  prizeDescription: {
+    type: String,
+    trim: true
+  },
+  drawDate: {
+    type: Date,
+    required: true
+  },
+  isPrizeClaimed: {
+    type: Boolean,
+    default: false
+  },
+  prizeClaimedDate: {
+    type: Date
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+}
+
+// 7. WALLET_TRANSACTIONS Collection
+{
+  _id: ObjectId(),
+  userId: {
+    type: ObjectId,
+    ref: 'users',
+    required: true
+  },
+  transactionId: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  transactionType: {
+    type: String,
+    enum: ['credit', 'debit'],
+    required: true
+  },
+  amount: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  description: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  category: {
+    type: String,
+    enum: ['ticket_purchase', 'prize_credit', 'refund', 'cashback', 'withdrawal', 'deposit'],
+    required: true
+  },
+  balanceBefore: {
+    type: Number,
+    required: true
+  },
+  balanceAfter: {
+    type: Number,
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'completed', 'failed', 'cancelled'],
+    default: 'completed'
+  },
+  referenceId: {
+    type: String, // Contest ID, Seat Purchase ID, etc.
+    trim: true
+  },
+  paymentGatewayResponse: {
+    type: Object,
+    default: {}
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+}
+
+// 8. WITHDRAWALS Collection
+{
+  _id: ObjectId(),
+  userId: {
+    type: ObjectId,
+    ref: 'users',
+    required: true
+  },
+  amount: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  bankDetailsId: {
+    type: ObjectId,
+    ref: 'bank_details',
+    required: true
+  },
+  withdrawalMethod: {
+    type: String,
+    enum: ['bank_transfer', 'upi'],
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'processing', 'completed', 'rejected', 'cancelled'],
+    default: 'pending'
+  },
+  requestDate: {
+    type: Date,
+    default: Date.now
+  },
+  processedDate: {
+    type: Date
+  },
+  transactionId: {
+    type: String,
+    unique: true
+  },
+  bankTransactionId: {
+    type: String
+  },
+  rejectionReason: {
+    type: String,
+    trim: true
+  },
+  adminNotes: {
+    type: String,
+    trim: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+}
+
+// 9. CASHBACK Collection
+{
+  _id: ObjectId(),
+  contestId: {
+    type: ObjectId,
+    ref: 'contests',
+    required: true
+  },
+  userId: {
+    type: ObjectId,
+    ref: 'users',
+    required: true
+  },
+  cashbackType: {
+    type: String,
+    enum: ['highest_purchase', 'special_offer', 'referral'],
+    required: true
+  },
+  cashbackAmount: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  eligibilityCriteria: {
+    type: String,
+    required: true
+  },
+  totalPurchases: {
+    type: Number,
+    default: 0
+  },
+  isCredited: {
+    type: Boolean,
+    default: false
+  },
+  creditedDate: {
+    type: Date
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+}
+
+// 10. HOME_SLIDERS Collection
+{
+  _id: ObjectId(),
+  title: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  imageUrl: {
+    type: String,
+    required: true
+  },
+  linkUrl: {
+    type: String,
+    trim: true
+  },
+  description: {
+    type: String,
+    trim: true
+  },
+  order: {
+    type: Number,
+    default: 0
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+}
+
+// 11. NOTIFICATIONS Collection
+{
+  _id: ObjectId(),
+  userId: {
+    type: ObjectId,
+    ref: 'users'
+  }, // null for broadcast notifications
+  title: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  message: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  type: {
+    type: String,
+    enum: ['general', 'contest', 'winner', 'payment', 'withdrawal'],
+    default: 'general'
+  },
+  isRead: {
+    type: Boolean,
+    default: false
+  },
+  readAt: {
+    type: Date
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+}
+
+// INDEXES for Performance Optimization
+
+// Users Collection Indexes
+db.users.createIndex({ "userId": 1 }, { unique: true })
+db.users.createIndex({ "email": 1 }, { unique: true })
+db.users.createIndex({ "phoneNumber": 1 }, { unique: true })
+
+// Purchased Seats Collection Indexes
+db.purchased_seats.createIndex({ "contestId": 1, "seatNumber": 1 }, { unique: true })
+db.purchased_seats.createIndex({ "userId": 1 })
+db.purchased_seats.createIndex({ "contestId": 1, "categoryId": 1 })
+
+// Contests Collection Indexes
+db.contests.createIndex({ "status": 1 })
+db.contests.createIndex({ "contestStartDate": 1 })
+
+// Wallet Transactions Collection Indexes
+db.wallet_transactions.createIndex({ "userId": 1, "createdAt": -1 })
+db.wallet_transactions.createIndex({ "transactionId": 1 }, { unique: true })
+
+// Winners Collection Indexes
+db.winners.createIndex({ "contestId": 1 })
+db.winners.createIndex({ "userId": 1 })
+
+// Bank Details Collection Indexes
+db.bank_details.createIndex({ "userId": 1 })
+
+// Withdrawals Collection Indexes
+db.withdrawals.createIndex({ "userId": 1, "status": 1 })
+
+// Notifications Collection Indexes
+db.notifications.createIndex({ "userId": 1, "isRead": 1 })
+
+// SAMPLE DATA STRUCTURE
+
+// Sample Contest Categories Configuration
+const contestCategories = [
+  { categoryId: 1, categoryName: 'Bike', seatRangeStart: 1, seatRangeEnd: 1000, totalSeats: 1000 },
+  { categoryId: 2, categoryName: 'Auto', seatRangeStart: 1001, seatRangeEnd: 2000, totalSeats: 1000 },
+  { categoryId: 3, categoryName: 'Car', seatRangeStart: 2001, seatRangeEnd: 3000, totalSeats: 1000 },
+  { categoryId: 4, categoryName: 'Jeep', seatRangeStart: 3001, seatRangeEnd: 4000, totalSeats: 1000 },
+  { categoryId: 5, categoryName: 'Van', seatRangeStart: 4001, seatRangeEnd: 5000, totalSeats: 1000 },
+  { categoryId: 6, categoryName: 'Bus', seatRangeStart: 5001, seatRangeEnd: 6000, totalSeats: 1000 },
+  { categoryId: 7, categoryName: 'Lorry', seatRangeStart: 6001, seatRangeEnd: 7000, totalSeats: 1000 },
+  { categoryId: 8, categoryName: 'Train', seatRangeStart: 7001, seatRangeEnd: 8000, totalSeats: 1000 },
+  { categoryId: 9, categoryName: 'Helicopter', seatRangeStart: 8001, seatRangeEnd: 9000, totalSeats: 1000 },
+  { categoryId: 10, categoryName: 'Airplane', seatRangeStart: 9001, seatRangeEnd: 10000, totalSeats: 1000 }
+];
+
+// Sample Prize Structure for 100rs Contest
+const samplePrizeStructure = [
+  { prizeRank: 1, prizeAmount: 100000, numberOfWinners: 1, prizeDescription: "First Prize" },
+  { prizeRank: 2, prizeAmount: 90000, numberOfWinners: 1, prizeDescription: "Second Prize" },
+  { prizeRank: 3, prizeAmount: 50000, numberOfWinners: 1, prizeDescription: "Third Prize" },
+  // ... admin will add more prizes
+];
+
+// AGGREGATION PIPELINES for Common Queries
+
+// 1. Get User's Contest Statistics
+const getUserContestStats = (userId) => [
+  {
+    $match: { userId: ObjectId(userId) }
+  },
+  {
+    $group: {
+      _id: "$contestId",
+      totalSeats: { $sum: 1 },
+      totalAmount: { $sum: "$ticketPrice" },
+      categories: { $addToSet: "$categoryName" }
+    }
+  },
+  {
+    $lookup: {
+      from: "contests",
+      localField: "_id",
+      foreignField: "_id",
+      as: "contest"
+    }
+  }
+];
+
+// 2. Get Contest Leaderboard (Highest Purchased)
+const getContestLeaderboard = (contestId) => [
+  {
+    $match: { contestId: ObjectId(contestId) }
+  },
+  {
+    $group: {
+      _id: "$userId",
+      totalPurchases: { $sum: 1 },
+      seatNumbers: { $push: "$seatNumber" },
+      totalAmount: { $sum: "$ticketPrice" }
+    }
+  },
+  {
+    $lookup: {
+      from: "users",
+      localField: "_id",
+      foreignField: "_id",
+      as: "user"
+    }
+  },
+  {
+    $sort: { totalPurchases: -1 }
+  },
+  {
+    $limit: 10
+  }
+];
+
+// 3. Get Category-wise Seat Status
+const getCategorySeatStatus = (contestId, categoryId) => [
+  {
+    $match: { 
+      contestId: ObjectId(contestId),
+      categoryId: categoryId
+    }
+  },
+  {
+    $group: {
+      _id: null,
+      purchasedSeats: { $push: "$seatNumber" },
+      totalPurchased: { $sum: 1 }
+    }
+  }
+];

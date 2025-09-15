@@ -1,0 +1,83 @@
+LOGIN:
+User id or phonenumber and (passwprd )
+REGISTER :
+User Name
+User id or user gmail
+User Profile picture
+Phone NUmber
+City (state)
+password & Reset Password
+Add extra one parameter
+USER PROFILE :
+BANK DETAILS
+Account Number
+IFSC Code
+Place
+UPI id
+add extra one paremter
+Hom Page
+Slider - image slider
+My contest ( button ) on click - we need display purchsed seats ( details )
+Contest - Contest Name, total Prize money , user price, No of Seats ( fixed
+slots 10,000), Available Seats, Wining list, total no of winner, user pecrhased
+seats, status os seats : ( Purchased or Unpurchased), Winers list, Prize for
+specific Lucky number
+After click any contest: ( total 10,000 slots )
+10 Categories
+1.Bike - ( 1 to 1000 ) seats numbers , Total seats , Available seats,
+--- After onclick of this category ( we need display 1 to 1000 seats )
+In this seats we need display Purchased Seats( in Light gray color )
+Un Purchased Seats - onlick its ask for ( ex: 100 rs from wallet ) SUBMIT
+After Pruchasing any seats number immeditaly that seats has been locked
+same for all category
+1.BIKE - 1 to 1000
+2.Auto - 1001 to 2000
+3.Car - 2001 to 3000
+4.Jeep - 3001 to 4000
+5.Van - 4001 to 5000
+6.Bus - 5001 to 6000
+7.Lorry - 6001 to 7000
+8.Train - 7001 to 8000
+9.Helicapter - 8001 to 9000
+10.Airplane -9001 to 10,000
+BINDASS GRAND
+Wining list - Button ( onclick)
+Example for 100rs) users
+Total Winners - 1001
+1.1,00000 * 1
+2.90,000 * 1
+3.etc admin will add
+Purchased Seats - Button ( onclick)
+Example for 100rs) users
+Highest Pruchased : USENAME ( HUNK)
+USER List ( Display in assending order)
+1.Hunk - 24, 113, 345, 786, See more or > ( arrow )
+2.Raghu - 1123, 23, 1
+3.Anil - 123
+Contest page:
+Total Seats - 1000
+Available Seats - 567
+1 to 1000
+BIKE SEATS
+we need display 1000 seats from 1 to 1000
+1 2 3 4 5 6 7 8 9 10 - in Row 10 numbers or 5 Numbers
+Below NOTICE text
+Highest Number Purchased person = 2000 cash Back
+Total Winners - 1001
+Catgory Page
+See more
+User name (HUNK)
+Total purchased seats
+11, 2232, 433, 6744
+,etc
+Winner LIST
+User Photo, Name, Vechile(category) Phone number, City, Seat Number , Prize Money
+BOTTOM BAR
+Home
+Prize Money = contest list - wining list
+Winner List = contest list - winner list
+Cash Back = contest list - User
+Payments - total balance , withdraw, transcation history
+Side bar
+Profile picture and name , my balance,
+Profile settings, bank details, How to play, help sup
