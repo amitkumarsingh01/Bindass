@@ -16,19 +16,9 @@ export default function Login() {
     try {
       if (!(username && password)) throw new Error('Enter username and password')
 
-      // Try backend login (works for seeded users: admin/admin123#, test/test123#)
-      try {
-        const res = await api.post('/auth/login', { userId: username, password })
-        if (res?.data?.access_token) {
-          localStorage.setItem('access_token', res.data.access_token)
-        }
-      } catch (err: any) {
-        // Allow seed admin bypass to enter portal even if backend unavailable
-        if (!(username === 'admin' && password === 'admin123#')) {
-          throw new Error(err?.response?.data?.detail || 'Invalid credentials')
-        }
-      }
-
+      // Store identity for header-based access
+      localStorage.setItem('admin_userId', username)
+      // Backend login no longer required
       localStorage.setItem('admin_authed', 'true')
       navigate('/', { replace: true })
     } finally {

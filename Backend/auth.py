@@ -4,6 +4,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Header
 from models import TokenData, User
 from database import get_database
 from config import settings
@@ -14,8 +15,8 @@ logger = logging.getLogger(__name__)
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# JWT token handling
-security = HTTPBearer()
+# JWT token handling (optional)
+security = HTTPBearer(auto_error=False)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash"""
@@ -37,44 +38,43 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
     return encoded_jwt
 
-async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Verify JWT token and return user data"""
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    
+async def verify_token(credentials: HTTPAuthorizationCredentials | None = Depends(security)):
+    """Verify JWT token if present; otherwise return None."""
+    if not credentials:
+        return None
     try:
         payload = jwt.decode(credentials.credentials, settings.secret_key, algorithms=[settings.algorithm])
-        userId: str = payload.get("sub")
-        if userId is None:
-            raise credentials_exception
-        token_data = TokenData(userId=userId)
+        user_id: str | None = payload.get("sub")
+        if not user_id:
+            return None
+        return TokenData(userId=user_id)
     except JWTError:
-        raise credentials_exception
-    
-    return token_data
+        return None
 
-async def get_current_user(token_data: TokenData = Depends(verify_token)):
-    """Get current authenticated user"""
+async def get_current_user(x_user_id: str | None = Header(None), token_data: TokenData | None = Depends(verify_token)):
+    """Resolve current user by header `X-User-Id` (preferred) or optional JWT token.
+    This removes the hard dependency on Authorization and allows simple userId-based access.
+    """
     database = get_database()
-    
-    # Try to find user by userId first, then by phoneNumber
+
+    # 1) Prefer header-provided userId
+    candidate = x_user_id or (token_data.userId if token_data else None)
+    if not candidate:
+        # As a last resort, allow anonymous 'guest' if exists
+        guest = await database.users.find_one({"userId": "guest"})
+        if guest:
+            return User(**guest)
+        # Otherwise signal missing identity
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provide X-User-Id header")
+
     user = await database.users.find_one({
         "$or": [
-            {"userId": token_data.userId},
-            {"phoneNumber": token_data.userId}
+            {"userId": candidate},
+            {"phoneNumber": candidate}
         ]
     })
-    
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return User(**user)
 
 async def authenticate_user(userId: str, password: str):

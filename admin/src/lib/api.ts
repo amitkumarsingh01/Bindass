@@ -7,11 +7,11 @@ export const api = axios.create({
 // Simple admin header injection if you later add real auth
 api.interceptors.request.use((config) => {
   config.headers = config.headers || {}
-  // Admin key to satisfy admin guard
+  // Admin key to satisfy admin guard (no bearer required)
   config.headers['X-Admin-Key'] = 'bindass-admin'
-  // Optional bearer token if present
-  const token = localStorage.getItem('access_token')
-  if (token) config.headers['Authorization'] = `Bearer ${token}`
+  // Optionally pass user identity for non-admin endpoints (when needed)
+  const userId = localStorage.getItem('admin_userId') || 'admin'
+  config.headers['X-User-Id'] = userId
   return config
 })
 
