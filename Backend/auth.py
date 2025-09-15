@@ -3,8 +3,7 @@ from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import HTTPException, status, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi import Header
+from fastapi import Header, Query
 from models import TokenData, User
 from database import get_database
 from config import settings
@@ -15,8 +14,6 @@ logger = logging.getLogger(__name__)
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# JWT token handling (optional)
-security = HTTPBearer(auto_error=False)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash"""
@@ -38,12 +35,15 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
     return encoded_jwt
 
-async def verify_token(credentials: HTTPAuthorizationCredentials | None = Depends(security)):
-    """Verify JWT token if present; otherwise return None."""
-    if not credentials:
+async def verify_token(authorization: str | None = Header(None)):
+    """Verify JWT token from Authorization header if present; otherwise return None.
+    This avoids registering a security scheme in OpenAPI.
+    """
+    if not authorization or not authorization.lower().startswith("bearer "):
         return None
     try:
-        payload = jwt.decode(credentials.credentials, settings.secret_key, algorithms=[settings.algorithm])
+        token = authorization.split(" ", 1)[1]
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
         user_id: str | None = payload.get("sub")
         if not user_id:
             return None
@@ -71,6 +71,28 @@ async def get_current_user(x_user_id: str | None = Header(None), token_data: Tok
         "$or": [
             {"userId": candidate},
             {"phoneNumber": candidate}
+        ]
+    })
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return User(**user)
+
+async def resolve_user(
+    userId: str | None = Query(None),
+    x_user_id: str | None = Header(None),
+    token_data: TokenData | None = Depends(verify_token)
+):
+    """Resolve a user by explicit query param `userId`, header `X-User-Id`, or optional JWT.
+    Prefer query param > header > token. No Authorization required.
+    """
+    chosen = userId or x_user_id or (token_data.userId if token_data else None)
+    if not chosen:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provide userId query or X-User-Id header")
+    database = get_database()
+    user = await database.users.find_one({
+        "$or": [
+            {"userId": chosen},
+            {"phoneNumber": chosen}
         ]
     })
     if not user:

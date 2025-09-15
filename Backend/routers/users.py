@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from models import User, BankDetails, BankDetailsCreate, UserResponse
-from auth import get_current_user
+from auth import get_current_user, resolve_user
 from database import get_database
 from bson import ObjectId
 import logging
@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.get("/profile", response_model=UserResponse)
-async def get_user_profile(current_user: User = Depends(get_current_user)):
+async def get_user_profile(current_user: User = Depends(resolve_user)):
     """Get user profile information"""
     user_dict = current_user.dict()
     user_dict["id"] = str(user_dict["id"])
@@ -23,7 +23,7 @@ async def update_user_profile(
     state: str = None,
     profilePicture: str = None,
     extraParameter1: str = None,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(resolve_user)
 ):
     """Update user profile information"""
     database = get_database()
@@ -70,7 +70,7 @@ async def update_user_profile(
 @router.post("/bank-details")
 async def add_bank_details(
     bank_details: BankDetailsCreate,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(resolve_user)
 ):
     """Add or update bank details for user"""
     database = get_database()
@@ -107,7 +107,7 @@ async def add_bank_details(
     return {"message": message}
 
 @router.get("/bank-details")
-async def get_bank_details(current_user: User = Depends(get_current_user)):
+async def get_bank_details(current_user: User = Depends(resolve_user)):
     """Get user's bank details"""
     database = get_database()
     
@@ -125,7 +125,7 @@ async def get_bank_details(current_user: User = Depends(get_current_user)):
     return bank_details
 
 @router.delete("/bank-details")
-async def delete_bank_details(current_user: User = Depends(get_current_user)):
+async def delete_bank_details(current_user: User = Depends(resolve_user)):
     """Delete user's bank details"""
     database = get_database()
     
@@ -140,7 +140,7 @@ async def delete_bank_details(current_user: User = Depends(get_current_user)):
     return {"message": "Bank details deleted successfully"}
 
 @router.get("/wallet/balance")
-async def get_wallet_balance(current_user: User = Depends(get_current_user)):
+async def get_wallet_balance(current_user: User = Depends(resolve_user)):
     """Get user's wallet balance"""
     return {
         "userId": current_user.userId,

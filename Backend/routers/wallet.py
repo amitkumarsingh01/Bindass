@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from models import User, WalletTransaction, Withdrawal, WithdrawalCreate, TransactionType, TransactionCategory, TransactionStatus, WithdrawalMethod, WithdrawalStatus
-from auth import get_current_user
+from auth import resolve_user
 from database import get_database
 from bson import ObjectId
 from datetime import datetime
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.get("/balance")
-async def get_wallet_balance(current_user: User = Depends(get_current_user)):
+async def get_wallet_balance(current_user: User = Depends(resolve_user)):
     """Get user's wallet balance and summary"""
     database = get_database()
     
@@ -32,7 +32,7 @@ async def get_wallet_balance(current_user: User = Depends(get_current_user)):
 
 @router.get("/transactions")
 async def get_wallet_transactions(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(resolve_user),
     limit: int = 20,
     skip: int = 0,
     category: Optional[TransactionCategory] = None
@@ -64,7 +64,7 @@ async def get_wallet_transactions(
 async def add_money_to_wallet(
     amount: float,
     description: str = "Wallet top-up",
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(resolve_user)
 ):
     """Add money to user's wallet"""
     database = get_database()
@@ -126,7 +126,7 @@ async def request_withdrawal(
     amount: float,
     bank_details_id: str,
     withdrawal_method: WithdrawalMethod = WithdrawalMethod.BANK_TRANSFER,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(resolve_user)
 ):
     """Request withdrawal from wallet"""
     database = get_database()
@@ -216,7 +216,7 @@ async def request_withdrawal(
 
 @router.get("/withdrawals")
 async def get_withdrawal_history(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(resolve_user),
     limit: int = 10,
     skip: int = 0
 ):
@@ -250,7 +250,7 @@ async def get_withdrawal_history(
 @router.get("/withdrawals/{withdrawal_id}")
 async def get_withdrawal_details(
     withdrawal_id: str,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(resolve_user)
 ):
     """Get specific withdrawal details"""
     database = get_database()
@@ -284,7 +284,7 @@ async def get_withdrawal_details(
 @router.post("/withdrawals/{withdrawal_id}/cancel")
 async def cancel_withdrawal(
     withdrawal_id: str,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(resolve_user)
 ):
     """Cancel a pending withdrawal request"""
     database = get_database()
@@ -327,7 +327,7 @@ async def cancel_withdrawal(
 
 @router.get("/summary")
 async def get_wallet_summary(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(resolve_user),
     days: int = 30
 ):
     """Get wallet summary for the last N days"""

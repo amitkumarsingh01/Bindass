@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from models import User, SeatPurchase, PurchasedSeat, PaymentMethod, PurchaseStatus
-from auth import get_current_user
+from auth import resolve_user
 from database import get_database
 from bson import ObjectId
 from datetime import datetime
@@ -105,7 +105,7 @@ async def get_available_seats(
 @router.post("/purchase")
 async def purchase_seats(
     seat_purchase: SeatPurchase,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(resolve_user)
 ):
     """Purchase seats for a contest"""
     database = get_database()
@@ -270,7 +270,7 @@ async def purchase_seats(
 async def get_purchased_seats(
     contest_id: str,
     category_id: int = None,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(resolve_user)
 ):
     """Get purchased seats for a contest (for display)"""
     database = get_database()
@@ -306,7 +306,7 @@ async def get_purchased_seats(
 async def get_category_seats(
     contest_id: str,
     category_id: int,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(resolve_user)
 ):
     """Get seat status for a specific category"""
     database = get_database()

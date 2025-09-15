@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from models import Contest, ContestCreate, User, Category, ContestStatus
-from auth import get_current_user
+from auth import resolve_user
 from database import get_database
 from bson import ObjectId
 from datetime import datetime
@@ -221,7 +221,7 @@ async def get_contest_winners(contest_id: str):
 @router.get("/{contest_id}/my-purchases")
 async def get_my_contest_purchases(
     contest_id: str,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(resolve_user)
 ):
     """Get user's purchased seats for a specific contest"""
     database = get_database()
