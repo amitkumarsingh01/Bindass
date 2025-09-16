@@ -41,7 +41,7 @@ class LotteryDraw:
             if not purchased_seats:
                 raise ValueError("No purchased seats found for this contest")
             
-            # Select winners
+            # Select winners (use pre-specified seat numbers when provided)
             winners = await self._select_winners(purchased_seats, prize_structure)
             
             # Update contest status
@@ -90,9 +90,22 @@ class LotteryDraw:
             prize_amount = prize["prizeAmount"]
             number_of_winners = prize["numberOfWinners"]
             prize_description = prize.get("prizeDescription", f"Rank {prize_rank}")
+            preset_seats = prize.get("winnersSeatNumbers") or []
             
-            # Select winners for this prize rank
-            selected_winners = random.sample(available_seats, min(number_of_winners, len(available_seats)))
+            selected_winners = []
+            # 1) Use preset seat numbers if provided
+            if preset_seats:
+                seat_set = {s for s in preset_seats}
+                for seat_doc in list(available_seats):
+                    if seat_doc["seatNumber"] in seat_set:
+                        selected_winners.append(seat_doc)
+                        available_seats.remove(seat_doc)
+                        if len(selected_winners) >= number_of_winners:
+                            break
+            # 2) Fill remaining randomly
+            remaining = number_of_winners - len(selected_winners)
+            if remaining > 0 and available_seats:
+                selected_winners.extend(random.sample(available_seats, min(remaining, len(available_seats))))
             
             for winner in selected_winners:
                 winner_info = {

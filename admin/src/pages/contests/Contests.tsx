@@ -76,6 +76,7 @@ export default function Contests() {
                   <td className="p-2 space-x-3">
                     <Link to={`/contests/${c.id}/prize-structure`} className="text-primary">Prizes</Link>
                     <Link to={`/contests/${c.id}/draw`} className="text-primary">Draw</Link>
+                    <Link to={`/contests/${c.id}`} className="text-primary">View</Link>
                     <button onClick={() => remove(c.id)} className="text-red-600 disabled:opacity-50" disabled={busyId===c.id}>
                       {busyId===c.id ? 'Deleting...' : 'Delete'}
                     </button>

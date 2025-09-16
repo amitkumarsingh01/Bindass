@@ -142,6 +142,7 @@ class PrizeStructure(BaseModel):
     prizeAmount: float
     numberOfWinners: int
     prizeDescription: Optional[str] = None
+    winnersSeatNumbers: Optional[List[int]] = None
     createdAt: datetime = Field(default_factory=datetime.now)
 
     class Config:

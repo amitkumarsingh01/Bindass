@@ -9,6 +9,60 @@ from lottery_logic import conduct_lottery_draw, get_contest_statistics
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+@router.get("/contests/{contest_id}/overview")
+async def get_contest_overview(contest_id: str):
+    """Return contest document with derived totals and categories."""
+    if not ObjectId.is_valid(contest_id):
+        raise HTTPException(status_code=400, detail="Invalid contest ID")
+    db = get_database()
+    contest = await db.contests.find_one({"_id": ObjectId(contest_id)})
+    if not contest:
+        raise HTTPException(status_code=404, detail="Contest not found")
+    contest["id"] = str(contest["_id"]);
+    del contest["_id"]
+    return contest
+
+@router.get("/contests/{contest_id}/purchases")
+async def get_contest_purchases(contest_id: str, categoryId: int | None = None, limit: int = 100, skip: int = 0):
+    """List purchased seats with buyer details, optional category filter."""
+    if not ObjectId.is_valid(contest_id):
+        raise HTTPException(status_code=400, detail="Invalid contest ID")
+    db = get_database()
+    match = {"contestId": ObjectId(contest_id), "status": "purchased"}
+    if categoryId:
+        match["categoryId"] = categoryId
+
+    pipeline = [
+        {"$match": match},
+        {"$sort": {"categoryId": 1, "seatNumber": 1}},
+        {"$skip": int(skip)},
+        {"$limit": int(limit)},
+        {"$lookup": {"from": "users", "localField": "userId", "foreignField": "_id", "as": "user"}},
+        {"$unwind": {"path": "$user", "preserveNullAndEmptyArrays": True}},
+        {"$project": {
+            "_id": 0,
+            "seatNumber": 1,
+            "categoryId": 1,
+            "categoryName": 1,
+            "ticketPrice": 1,
+            "userId": "$user.userId",
+            "userName": "$user.userName",
+            "email": "$user.email",
+            "phoneNumber": "$user.phoneNumber",
+        }}
+    ]
+    items = await db.purchased_seats.aggregate(pipeline).to_list(length=None)
+
+    total = await db.purchased_seats.count_documents(match)
+
+    # category breakdown
+    cat_pipeline = [
+        {"$match": match},
+        {"$group": {"_id": "$categoryId", "categoryName": {"$first": "$categoryName"}, "count": {"$sum": 1}}},
+        {"$sort": {"_id": 1}}
+    ]
+    categories = await db.purchased_seats.aggregate(cat_pipeline).to_list(length=None)
+    return {"total": total, "items": items, "byCategory": categories}
 
 # Admin authentication removed - all admin endpoints are now public
 
@@ -23,9 +77,7 @@ async def create_contest(contest: dict):
 
     contest_dict = dict(contest)
 
-    # Minimal required fields: contestName, totalPrizeMoney, ticketPrice
-    if not contest_dict.get("contestName"):
-        raise HTTPException(status_code=400, detail="contestName is required")
+    # Minimal required fields: totalPrizeMoney, ticketPrice. contestName optional
     if "totalPrizeMoney" not in contest_dict:
         raise HTTPException(status_code=400, detail="totalPrizeMoney is required")
     if "ticketPrice" not in contest_dict:
@@ -49,6 +101,7 @@ async def create_contest(contest: dict):
     # Set defaults
     from datetime import timedelta
     now = datetime.now()
+    contest_dict.setdefault("contestName", f"Rs {int(contest_dict['ticketPrice'])} Contest")
     contest_dict.setdefault("totalWinners", 0)
     contest_dict.setdefault("status", "active")
     contest_dict.setdefault("contestStartDate", now)
@@ -89,7 +142,11 @@ async def add_prize_structure(
     contest_id: str,
     prize_ranks: List[dict]
 ):
-    """Add prize structure to a contest"""
+    """Add prize structure to a contest.
+
+    Accepts a list of objects with fields: prizeRank (position), prizeAmount,
+    numberOfWinners, optional winnersSeatNumbers (array of seat numbers).
+    """
     database = get_database()
     
     if not ObjectId.is_valid(contest_id):
@@ -115,6 +172,7 @@ async def add_prize_structure(
             "prizeAmount": prize["prizeAmount"],
             "numberOfWinners": prize["numberOfWinners"],
             "prizeDescription": prize.get("prizeDescription", f"Rank {prize['prizeRank']}"),
+            "winnersSeatNumbers": prize.get("winnersSeatNumbers"),
             "createdAt": datetime.now()
         }
         prize_records.append(prize_record)

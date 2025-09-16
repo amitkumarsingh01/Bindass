@@ -6,6 +6,7 @@ import Users from './pages/users/Users'
 import UserDetail from './pages/users/UserDetail'
 import Contests from './pages/contests/Contests'
 import CreateContest from './pages/contests/CreateContest'
+import ContestDetail from './pages/contests/ContestDetail'
 import PrizeStructure from './pages/contests/PrizeStructure'
 import Draw from './pages/contests/Draw'
 import Withdrawals from './pages/Withdrawals'
@@ -21,6 +22,7 @@ function App() {
         <Route path="users/:id" element={<UserDetail />} />
         <Route path="contests" element={<Contests />} />
         <Route path="contests/create" element={<CreateContest />} />
+        <Route path="contests/:id" element={<ContestDetail />} />
         <Route path="contests/:id/prize-structure" element={<PrizeStructure />} />
         <Route path="contests/:id/draw" element={<Draw />} />
         <Route path="withdrawals" element={<Withdrawals />} />
