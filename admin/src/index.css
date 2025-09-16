@@ -1,3 +1,20 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* App base styling using brand color */
+:root {
+  --color-brand: #c68a19;
+}
+
+body {
+  @apply bg-white text-gray-900;
+}
+
+.btn-primary {
+  @apply bg-primary text-white px-4 py-2 rounded hover:opacity-95;
+}
+
+.card {
+  @apply bg-white rounded-lg shadow p-4;
+}

@@ -13,34 +13,76 @@ router = APIRouter()
 # Admin authentication removed - all admin endpoints are now public
 
 @router.post("/contests", response_model=dict)
-async def create_contest(contest: ContestCreate):
-    """Create a new contest"""
+async def create_contest(contest: dict):
+    """Create a new contest. Accepts full contest JSON with optional categories.
+
+    If `categories` are not provided, default 10 categories will be created.
+    If provided, totals are derived when missing.
+    """
     database = get_database()
-    
-    # Create contest with default categories
-    contest_dict = contest.dict()
-    contest_dict["categories"] = [
-        {"categoryId": 1, "categoryName": "Bike", "seatRangeStart": 1, "seatRangeEnd": 1000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0},
-        {"categoryId": 2, "categoryName": "Auto", "seatRangeStart": 1001, "seatRangeEnd": 2000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0},
-        {"categoryId": 3, "categoryName": "Car", "seatRangeStart": 2001, "seatRangeEnd": 3000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0},
-        {"categoryId": 4, "categoryName": "Jeep", "seatRangeStart": 3001, "seatRangeEnd": 4000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0},
-        {"categoryId": 5, "categoryName": "Van", "seatRangeStart": 4001, "seatRangeEnd": 5000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0},
-        {"categoryId": 6, "categoryName": "Bus", "seatRangeStart": 5001, "seatRangeEnd": 6000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0},
-        {"categoryId": 7, "categoryName": "Lorry", "seatRangeStart": 6001, "seatRangeEnd": 7000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0},
-        {"categoryId": 8, "categoryName": "Train", "seatRangeStart": 7001, "seatRangeEnd": 8000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0},
-        {"categoryId": 9, "categoryName": "Helicopter", "seatRangeStart": 8001, "seatRangeEnd": 9000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0},
-        {"categoryId": 10, "categoryName": "Airplane", "seatRangeStart": 9001, "seatRangeEnd": 10000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0}
-    ]
+
+    contest_dict = dict(contest)
+
+    # Minimal required fields: contestName, totalPrizeMoney, ticketPrice
+    if not contest_dict.get("contestName"):
+        raise HTTPException(status_code=400, detail="contestName is required")
+    if "totalPrizeMoney" not in contest_dict:
+        raise HTTPException(status_code=400, detail="totalPrizeMoney is required")
+    if "ticketPrice" not in contest_dict:
+        raise HTTPException(status_code=400, detail="ticketPrice is required")
+
+    # Categories
+    if not contest_dict.get("categories"):
+        contest_dict["categories"] = [
+            {"categoryId": 1, "categoryName": "Bike", "seatRangeStart": 1, "seatRangeEnd": 1000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0},
+            {"categoryId": 2, "categoryName": "Auto", "seatRangeStart": 1001, "seatRangeEnd": 2000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0},
+            {"categoryId": 3, "categoryName": "Car", "seatRangeStart": 2001, "seatRangeEnd": 3000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0},
+            {"categoryId": 4, "categoryName": "Jeep", "seatRangeStart": 3001, "seatRangeEnd": 4000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0},
+            {"categoryId": 5, "categoryName": "Van", "seatRangeStart": 4001, "seatRangeEnd": 5000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0},
+            {"categoryId": 6, "categoryName": "Bus", "seatRangeStart": 5001, "seatRangeEnd": 6000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0},
+            {"categoryId": 7, "categoryName": "Lorry", "seatRangeStart": 6001, "seatRangeEnd": 7000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0},
+            {"categoryId": 8, "categoryName": "Train", "seatRangeStart": 7001, "seatRangeEnd": 8000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0},
+            {"categoryId": 9, "categoryName": "Helicopter", "seatRangeStart": 8001, "seatRangeEnd": 9000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0},
+            {"categoryId": 10, "categoryName": "Airplane", "seatRangeStart": 9001, "seatRangeEnd": 10000, "totalSeats": 1000, "availableSeats": 1000, "purchasedSeats": 0}
+        ]
+
+    # Set defaults
+    from datetime import timedelta
+    now = datetime.now()
+    contest_dict.setdefault("totalWinners", 0)
+    contest_dict.setdefault("status", "active")
+    contest_dict.setdefault("contestStartDate", now)
+    contest_dict.setdefault("contestEndDate", now + timedelta(days=7))
+    contest_dict.setdefault("drawDate", now + timedelta(days=8))
+
+    # Derive totals if not present
+    if "totalSeats" not in contest_dict or "availableSeats" not in contest_dict:
+        total_seats = sum(int(c.get("totalSeats", 0)) for c in contest_dict["categories"])
+        purchased = sum(int(c.get("purchasedSeats", 0)) for c in contest_dict["categories"])
+        contest_dict["totalSeats"] = contest_dict.get("totalSeats", total_seats)
+        contest_dict["availableSeats"] = contest_dict.get("availableSeats", total_seats - purchased)
+        contest_dict["purchasedSeats"] = contest_dict.get("purchasedSeats", purchased)
+
     contest_dict["createdAt"] = datetime.now()
     contest_dict["updatedAt"] = datetime.now()
-    
+
     result = await database.contests.insert_one(contest_dict)
-    
+
     return {
         "message": "Contest created successfully",
         "contestId": str(result.inserted_id),
-        "contestName": contest.contestName
+        "contestName": contest_dict.get("contestName")
     }
+
+@router.delete("/contests/{contest_id}")
+async def delete_contest(contest_id: str):
+    if not ObjectId.is_valid(contest_id):
+        raise HTTPException(status_code=400, detail="Invalid contest ID")
+    database = get_database()
+    res = await database.contests.delete_one({"_id": ObjectId(contest_id)})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Contest not found")
+    return {"message": "Contest deleted"}
 
 @router.post("/contests/{contest_id}/prize-structure")
 async def add_prize_structure(

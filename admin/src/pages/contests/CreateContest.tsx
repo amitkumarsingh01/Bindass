@@ -8,10 +8,6 @@ export default function CreateContest() {
     contestName: '',
     totalPrizeMoney: '',
     ticketPrice: '',
-    totalWinners: '',
-    contestStartDate: '',
-    contestEndDate: '',
-    drawDate: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -25,10 +21,6 @@ export default function CreateContest() {
         contestName: form.contestName,
         totalPrizeMoney: Number(form.totalPrizeMoney),
         ticketPrice: Number(form.ticketPrice),
-        totalWinners: Number(form.totalWinners),
-        contestStartDate: new Date(form.contestStartDate).toISOString(),
-        contestEndDate: new Date(form.contestEndDate).toISOString(),
-        drawDate: new Date(form.drawDate).toISOString(),
       })
       nav('/contests', { replace: true })
     } catch (e: any) {
@@ -52,18 +44,6 @@ export default function CreateContest() {
         </Field>
         <Field label="Ticket Price">
           <input className="w-full border rounded px-3 py-2" type="number" value={form.ticketPrice} onChange={(e)=>set('ticketPrice', e.target.value)} />
-        </Field>
-        <Field label="Total Winners">
-          <input className="w-full border rounded px-3 py-2" type="number" value={form.totalWinners} onChange={(e)=>set('totalWinners', e.target.value)} />
-        </Field>
-        <Field label="Start Date">
-          <input className="w-full border rounded px-3 py-2" type="datetime-local" value={form.contestStartDate} onChange={(e)=>set('contestStartDate', e.target.value)} />
-        </Field>
-        <Field label="End Date">
-          <input className="w-full border rounded px-3 py-2" type="datetime-local" value={form.contestEndDate} onChange={(e)=>set('contestEndDate', e.target.value)} />
-        </Field>
-        <Field label="Draw Date">
-          <input className="w-full border rounded px-3 py-2" type="datetime-local" value={form.drawDate} onChange={(e)=>set('drawDate', e.target.value)} />
         </Field>
         {error && <p className="text-red-600">{error}</p>}
         <button disabled={loading} className="bg-primary text-white px-3 py-2 rounded hover:opacity-95 disabled:opacity-60">{loading ? 'Creating...' : 'Create Contest'}</button>

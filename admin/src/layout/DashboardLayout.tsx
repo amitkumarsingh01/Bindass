@@ -28,18 +28,18 @@ export default function DashboardLayout() {
               key={n.to}
               to={n.to}
               end={n.to === '/'}
-              className={({ isActive }) => `block px-3 py-2 rounded ${isActive ? 'bg-primary text-white' : 'hover:bg-gray-100'}`}
+              className={({ isActive }) => `block px-3 py-2 rounded ${isActive ? 'bg-primary text-white' : 'hover:bg-[#f7f3ea]'}`}
             >
               {n.label}
             </NavLink>
           ))}
         </nav>
         <div className="mt-6 space-y-2">
-          <NavLink to="/contests/create" className="block px-3 py-2 rounded hover:bg-gray-100">Create Contest</NavLink>
+          <NavLink to="/contests/create" className="block px-3 py-2 rounded hover:bg-[#f7f3ea]">Create Contest</NavLink>
         </div>
-        <button onClick={logout} className="mt-8 w-full bg-gray-100 hover:bg-gray-200 rounded py-2">Logout</button>
+        <button onClick={logout} className="mt-8 w-full bg-[#f7f3ea] hover:bg-[#efd9a7] text-gray-800 rounded py-2">Logout</button>
       </aside>
-      <main className="bg-gray-50 p-6">
+      <main className="bg-white p-6">
         <TopBar />
         <Outlet />
       </main>
