@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form
 from models import Contest, ContestCreate, PrizeStructure, HomeSlider, Withdrawal, WithdrawalStatus
 from database import get_database
 from bson import ObjectId
@@ -196,18 +196,43 @@ async def update_withdrawal_status(
 
 @router.post("/home-sliders")
 async def create_home_slider(
-    title: str,
-    image_url: str,
-    link_url: str = None,
-    description: str = None,
-    order: int = 0
+    title: str = Form(...),
+    image: UploadFile = File(None),
+    image_url: str | None = Form(None),
+    link_url: str | None = Form(None),
+    description: str | None = Form(None),
+    order: int = Form(0)
 ):
-    """Create home slider"""
+    """Create home slider.
+
+    Accepts either an uploaded file (`image`) or a direct `image_url`.
+    If a file is uploaded, it is saved under `static/uploads/` and its
+    public URL is returned as `/static/uploads/<filename>`.
+    """
     database = get_database()
-    
+
+    saved_image_url = None
+    if image is not None:
+        # Save uploaded file
+        uploads_dir = "static/uploads"
+        import os
+        os.makedirs(uploads_dir, exist_ok=True)
+        # Make filename unique
+        base_name = os.path.basename(image.filename or "upload.jpg")
+        timestamp = int(datetime.now().timestamp())
+        safe_name = f"{timestamp}_{base_name}"
+        file_path = os.path.join(uploads_dir, safe_name)
+        with open(file_path, "wb") as f:
+            f.write(await image.read())
+        saved_image_url = f"/static/uploads/{safe_name}"
+    elif image_url:
+        saved_image_url = image_url
+    else:
+        raise HTTPException(status_code=400, detail="Either image file or image_url is required")
+
     slider = {
         "title": title,
-        "imageUrl": image_url,
+        "imageUrl": saved_image_url,
         "linkUrl": link_url,
         "description": description,
         "order": order,
@@ -215,12 +240,13 @@ async def create_home_slider(
         "createdAt": datetime.now(),
         "updatedAt": datetime.now()
     }
-    
+
     result = await database.home_sliders.insert_one(slider)
-    
+
     return {
         "message": "Home slider created successfully",
-        "sliderId": str(result.inserted_id)
+        "sliderId": str(result.inserted_id),
+        "imageUrl": saved_image_url
     }
 
 @router.get("/home-sliders")

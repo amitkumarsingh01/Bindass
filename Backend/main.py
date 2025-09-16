@@ -1,10 +1,12 @@
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import logging
 from database import connect_to_mongo, close_mongo_connection, get_database
 from auth import get_password_hash
 from routers import auth, users, contests, seats, wallet, admin, notifications
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -14,6 +16,11 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Startup
     await connect_to_mongo()
+    # Ensure static upload directories exist
+    try:
+        os.makedirs(os.path.join("static", "uploads"), exist_ok=True)
+    except Exception as _e:
+        logger.error(f"Failed to ensure static/uploads directory: {_e}")
     # Seed default users if they don't exist
     try:
         db = get_database()
@@ -86,6 +93,9 @@ app.include_router(seats.router, prefix="/api/seats", tags=["Seats"])
 app.include_router(wallet.router, prefix="/api/wallet", tags=["Wallet"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
+
+# Mount static files to serve uploaded images
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
 async def root():
