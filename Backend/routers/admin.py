@@ -1,8 +1,5 @@
-from fastapi import APIRouter, HTTPException, Depends, status
-from models import Contest, ContestCreate, PrizeStructure, HomeSlider, Withdrawal, WithdrawalStatus, User
-from auth import get_current_user
-from fastapi import Header
-from config import settings
+from fastapi import APIRouter, HTTPException, status
+from models import Contest, ContestCreate, PrizeStructure, HomeSlider, Withdrawal, WithdrawalStatus
 from database import get_database
 from bson import ObjectId
 from datetime import datetime
@@ -13,18 +10,10 @@ from lottery_logic import conduct_lottery_draw, get_contest_statistics
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Simple admin check - in production, implement proper role-based access
-async def is_admin(x_admin_key: str | None = Header(None)):
-    """Admin guard reduced: accept `X-Admin-Key` only."""
-    if x_admin_key and x_admin_key == settings.admin_key:
-        return True
-    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin key required")
+# Admin authentication removed - all admin endpoints are now public
 
 @router.post("/contests", response_model=dict)
-async def create_contest(
-    contest: ContestCreate,
-    current_user: User = Depends(is_admin)
-):
+async def create_contest(contest: ContestCreate):
     """Create a new contest"""
     database = get_database()
     
@@ -56,8 +45,7 @@ async def create_contest(
 @router.post("/contests/{contest_id}/prize-structure")
 async def add_prize_structure(
     contest_id: str,
-    prize_ranks: List[dict],
-    current_user: User = Depends(is_admin)
+    prize_ranks: List[dict]
 ):
     """Add prize structure to a contest"""
     database = get_database()
@@ -98,10 +86,7 @@ async def add_prize_structure(
     }
 
 @router.post("/contests/{contest_id}/draw")
-async def conduct_draw(
-    contest_id: str,
-    current_user: User = Depends(is_admin)
-):
+async def conduct_draw(contest_id: str):
     """Conduct lottery draw for a contest"""
     try:
         result = await conduct_lottery_draw(contest_id)
@@ -114,10 +99,7 @@ async def conduct_draw(
         )
 
 @router.get("/contests/{contest_id}/statistics")
-async def get_contest_admin_stats(
-    contest_id: str,
-    current_user: User = Depends(is_admin)
-):
+async def get_contest_admin_stats(contest_id: str):
     """Get detailed contest statistics for admin"""
     try:
         stats = await get_contest_statistics(contest_id)
@@ -133,8 +115,7 @@ async def get_contest_admin_stats(
 async def get_all_withdrawals(
     status: Optional[WithdrawalStatus] = None,
     limit: int = 20,
-    skip: int = 0,
-    current_user: User = Depends(is_admin)
+    skip: int = 0
 ):
     """Get all withdrawal requests"""
     database = get_database()
@@ -174,8 +155,7 @@ async def get_all_withdrawals(
 async def update_withdrawal_status(
     withdrawal_id: str,
     status: WithdrawalStatus,
-    admin_notes: str = None,
-    current_user: User = Depends(is_admin)
+    admin_notes: str = None
 ):
     """Update withdrawal status"""
     database = get_database()
@@ -220,8 +200,7 @@ async def create_home_slider(
     image_url: str,
     link_url: str = None,
     description: str = None,
-    order: int = 0,
-    current_user: User = Depends(is_admin)
+    order: int = 0
 ):
     """Create home slider"""
     database = get_database()
@@ -245,9 +224,7 @@ async def create_home_slider(
     }
 
 @router.get("/home-sliders")
-async def get_home_sliders(
-    current_user: User = Depends(is_admin)
-):
+async def get_home_sliders():
     """Get all home sliders"""
     database = get_database()
     
@@ -269,8 +246,7 @@ async def update_home_slider(
     link_url: str = None,
     description: str = None,
     order: int = None,
-    is_active: bool = None,
-    current_user: User = Depends(is_admin)
+    is_active: bool = None
 ):
     """Update home slider"""
     database = get_database()
@@ -310,10 +286,7 @@ async def update_home_slider(
     return {"message": "Home slider updated successfully"}
 
 @router.delete("/home-sliders/{slider_id}")
-async def delete_home_slider(
-    slider_id: str,
-    current_user: User = Depends(is_admin)
-):
+async def delete_home_slider(slider_id: str):
     """Delete home slider"""
     database = get_database()
     
@@ -334,7 +307,7 @@ async def delete_home_slider(
     return {"message": "Home slider deleted successfully"}
 
 @router.get("/dashboard")
-async def get_admin_dashboard(current_user: User = Depends(is_admin)):
+async def get_admin_dashboard():
     """Get admin dashboard statistics"""
     database = get_database()
     
