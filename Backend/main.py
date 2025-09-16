@@ -94,6 +94,12 @@ app.include_router(wallet.router, prefix="/api/wallet", tags=["Wallet"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 
+# Ensure static directory exists before mounting
+try:
+    os.makedirs(os.path.join("static", "uploads"), exist_ok=True)
+except Exception as _e:
+    logger.error(f"Failed to create static/uploads directory at import time: {_e}")
+
 # Mount static files to serve uploaded images
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
