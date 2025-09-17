@@ -15,11 +15,15 @@ export default function Login() {
     try {
       if (!(username && password)) throw new Error('Enter username and password')
 
-      // Store identity for header-based access
-      localStorage.setItem('admin_userId', username)
-      // Backend login no longer required
-      localStorage.setItem('admin_authed', 'true')
-      navigate('/', { replace: true })
+      // Hardcoded admin credentials
+      if (username === 'admin' && password === 'admin123#') {
+        localStorage.setItem('admin_userId', username)
+        localStorage.setItem('admin_authed', 'true')
+        navigate('/', { replace: true })
+        return
+      }
+
+      setError('Invalid credentials')
     } finally {
       setLoading(false)
     }
