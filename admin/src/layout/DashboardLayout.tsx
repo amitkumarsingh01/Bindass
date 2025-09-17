@@ -7,6 +7,7 @@ const nav = [
   { to: '/contests', label: 'Contests', icon: '🎯', description: 'Contest Control' },
   { to: '/withdrawals', label: 'Withdrawals', icon: '💰', description: 'Payment Requests' },
   { to: '/sliders', label: 'Home Sliders', icon: '🖼️', description: 'Banner Management' },
+  { to: '/contact', label: 'Contact', icon: '☎️', description: 'Support Details' },
 ]
 
 export default function DashboardLayout() {

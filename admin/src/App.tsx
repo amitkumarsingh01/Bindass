@@ -11,6 +11,7 @@ import PrizeStructure from './pages/contests/PrizeStructure'
 import Draw from './pages/contests/Draw'
 import Withdrawals from './pages/Withdrawals'
 import Sliders from './pages/Sliders'
+import Contact from './pages/Contact'
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
         <Route path="contests/:id/draw" element={<Draw />} />
         <Route path="withdrawals" element={<Withdrawals />} />
         <Route path="sliders" element={<Sliders />} />
+        <Route path="contact" element={<Contact />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
