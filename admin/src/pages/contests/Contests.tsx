@@ -272,7 +272,7 @@ export default function Contests() {
                     to={`/contests/${contest.id}/draw`}
                     className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 text-sm font-medium text-center"
                   >
-                    Conduct Draw
+                    Announce Prize
                   </Link>
                   <button
                     onClick={() => remove(contest.id)}

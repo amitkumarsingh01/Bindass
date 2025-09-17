@@ -185,14 +185,17 @@ async def add_prize_structure(
         "prizesAdded": len(prize_records)
     }
 
-@router.post("/contests/{contest_id}/draw")
-async def conduct_draw(contest_id: str):
-    """Conduct lottery draw for a contest"""
+@router.post("/contests/{contest_id}/announce-prize")
+async def announce_prize_winners(contest_id: str):
+    """Announce prize winners and credit amounts to wallets"""
     try:
         result = await conduct_lottery_draw(contest_id)
+        # Update the response to reflect prize announcement
+        result["announceTime"] = result.get("drawDate")
+        result["message"] = "Prize winners announced and amounts credited to wallets successfully"
         return result
     except Exception as e:
-        logger.error(f"Error conducting draw: {e}")
+        logger.error(f"Error announcing prize winners: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
