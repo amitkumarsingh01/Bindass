@@ -163,6 +163,9 @@ async def add_prize_structure(
             detail="Contest not found"
         )
     
+    # Replace existing prize structure for this contest to avoid duplicates
+    await database.prize_structure.delete_many({"contestId": ObjectId(contest_id)})
+
     # Create prize structure records
     prize_records = []
     for prize in prize_ranks:
@@ -184,6 +187,31 @@ async def add_prize_structure(
         "contestId": contest_id,
         "prizesAdded": len(prize_records)
     }
+
+@router.get("/contests/{contest_id}/prize-structure")
+async def get_prize_structure(contest_id: str):
+    """Return saved prize structure for a contest, sorted by prizeRank."""
+    database = get_database()
+
+    if not ObjectId.is_valid(contest_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid contest ID"
+        )
+
+    cursor = database.prize_structure.find({"contestId": ObjectId(contest_id)}).sort("prizeRank", 1)
+    items: list[dict] = []
+    async for doc in cursor:
+        items.append({
+            "id": str(doc.get("_id")),
+            "prizeRank": doc.get("prizeRank"),
+            "prizeAmount": doc.get("prizeAmount"),
+            "numberOfWinners": doc.get("numberOfWinners"),
+            "prizeDescription": doc.get("prizeDescription"),
+            "winnersSeatNumbers": doc.get("winnersSeatNumbers") or []
+        })
+
+    return {"items": items}
 
 @router.post("/contests/{contest_id}/announce-prize")
 async def announce_prize_winners(contest_id: str):

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { api } from '../../lib/api'
 
@@ -13,6 +13,28 @@ export default function PrizeStructure() {
   ])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Load existing prize structure on mount
+  useEffect(() => {
+    (async () => {
+      if (!id) return
+      try {
+        const res = await api.get(`/admin/contests/${id}/prize-structure`)
+        const items = (res.data?.items || []) as any[]
+        if (items.length > 0) {
+          setRows(items.map(it => ({
+            prizeRank: Number(it.prizeRank) || 0,
+            prizeAmount: Number(it.prizeAmount) || 0,
+            numberOfWinners: Number(it.numberOfWinners) || 0,
+            prizeDescription: it.prizeDescription || '',
+            winnersSeatNumbers: Array.isArray(it.winnersSeatNumbers) ? it.winnersSeatNumbers.join(',') : (it.winnersSeatNumbers || '')
+          })))
+        }
+      } catch (e) {
+        // ignore load errors; start with defaults
+      }
+    })()
+  }, [id])
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
