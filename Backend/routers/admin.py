@@ -286,6 +286,36 @@ async def get_all_withdrawals(
 # New public utility APIs
 # =========================
 
+@router.get("/contact")
+async def get_contact_info():
+    """Public: Get contact information (single document)."""
+    db = get_database()
+    doc = await db.settings.find_one({"key": "contact"})
+    if not doc:
+        return {"contactNo": "", "email": "", "website": ""}
+    data = doc.get("value", {})
+    return {
+        "contactNo": data.get("contactNo", ""),
+        "email": data.get("email", ""),
+        "website": data.get("website", "")
+    }
+
+@router.put("/contact")
+async def update_contact_info(payload: dict):
+    """Public: Update contact information (no auth)."""
+    db = get_database()
+    value = {
+        "contactNo": payload.get("contactNo", ""),
+        "email": payload.get("email", ""),
+        "website": payload.get("website", "")
+    }
+    await db.settings.update_one(
+        {"key": "contact"},
+        {"$set": {"key": "contact", "value": value, "updatedAt": datetime.now()}},
+        upsert=True
+    )
+    return {"message": "Contact info saved"}
+
 @router.get("/payments")
 async def get_payments(userId: Optional[str] = None, limit: int = 100, skip: int = 0):
     """Return wallet transactions. If userId provided, filter by that user.
