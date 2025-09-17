@@ -99,13 +99,15 @@ class LotteryDraw:
                 for seat_doc in list(available_seats):
                     if seat_doc["seatNumber"] in seat_set:
                         selected_winners.append(seat_doc)
-                        available_seats.remove(seat_doc)
+                        # Do not remove here; defer removal to the common loop below
                         if len(selected_winners) >= number_of_winners:
                             break
-            # 2) Fill remaining randomly
+            # 2) When no preset seats are defined, do NOT randomly fill from purchased seats.
+            #    Unawarded positions remain unfilled by design (as per requirements).
             remaining = number_of_winners - len(selected_winners)
-            if remaining > 0 and available_seats:
-                selected_winners.extend(random.sample(available_seats, min(remaining, len(available_seats))))
+            if remaining > 0 and not preset_seats:
+                # Intentionally leave unfilled (no winners for these positions)
+                pass
             
             for winner in selected_winners:
                 winner_info = {
@@ -119,8 +121,9 @@ class LotteryDraw:
                 }
                 winners.append(winner_info)
                 
-                # Remove selected seat from available seats
-                available_seats.remove(winner)
+                # Remove selected seat from available seats (only once)
+                if winner in available_seats:
+                    available_seats.remove(winner)
             
             # If we've selected all available seats, break
             if not available_seats:
