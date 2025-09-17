@@ -282,6 +282,112 @@ async def get_all_withdrawals(
         "skip": skip
     }
 
+# =========================
+# New public utility APIs
+# =========================
+
+@router.get("/payments")
+async def get_payments(userId: Optional[str] = None, limit: int = 100, skip: int = 0):
+    """Return wallet transactions. If userId provided, filter by that user.
+
+    No auth. Returns credits and debits with pagination.
+    """
+    db = get_database()
+    query = {}
+    if userId:
+        # Resolve by users.userId (string) to _id
+        user = await db.users.find_one({"userId": userId})
+        if not user:
+            return {"total": 0, "items": []}
+        query["userId"] = user["_id"]
+
+    cursor = db.wallet_transactions.find(query).sort("createdAt", -1).skip(skip).limit(limit)
+    items = []
+    async for tx in cursor:
+        tx["id"] = str(tx.pop("_id"))
+        tx["userId"] = str(tx["userId"]) if isinstance(tx.get("userId"), ObjectId) else tx.get("userId")
+        items.append(tx)
+
+    total = await db.wallet_transactions.count_documents(query)
+    return {"total": total, "items": items, "limit": limit, "skip": skip}
+
+@router.post("/users/{user_id}/profile-picture")
+async def upload_profile_picture(user_id: str, image: UploadFile = File(...)):
+    """Upload/replace profile picture for a user identified by users.userId (string)."""
+    db = get_database()
+    user = await db.users.find_one({"userId": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    import os
+    os.makedirs("static/uploads", exist_ok=True)
+    base_name = os.path.basename(image.filename or "profile.jpg")
+    timestamp = int(datetime.now().timestamp())
+    file_name = f"pf_{user_id}_{timestamp}_{base_name}"
+    file_path = os.path.join("static/uploads", file_name)
+    with open(file_path, "wb") as f:
+        f.write(await image.read())
+    public_url = f"/static/uploads/{file_name}"
+
+    await db.users.update_one({"_id": user["_id"]}, {"$set": {"profilePicture": public_url, "updatedAt": datetime.now()}})
+    return {"message": "Profile picture updated", "imageUrl": public_url}
+
+@router.delete("/users/{user_id}/profile-picture")
+async def remove_profile_picture(user_id: str):
+    """Remove profile picture (sets to None) for a user identified by users.userId (string)."""
+    db = get_database()
+    user = await db.users.find_one({"userId": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    await db.users.update_one({"_id": user["_id"]}, {"$set": {"profilePicture": None, "updatedAt": datetime.now()}})
+    return {"message": "Profile picture removed"}
+
+@router.get("/contests/{contest_id}/prizes-summary")
+async def get_prizes_summary(contest_id: str):
+    """Return prize structure with a winnersCount per prizeRank for the given contest.
+
+    No auth. Uses contestId.
+    """
+    db = get_database()
+    if not ObjectId.is_valid(contest_id):
+        raise HTTPException(status_code=400, detail="Invalid contest ID")
+
+    # Prize structure
+    prizes = []
+    cursor = db.prize_structure.find({"contestId": ObjectId(contest_id)}).sort("prizeRank", 1)
+    async for doc in cursor:
+        prizes.append({
+            "id": str(doc.get("_id")),
+            "prizeRank": doc.get("prizeRank"),
+            "prizeAmount": doc.get("prizeAmount"),
+            "numberOfWinners": doc.get("numberOfWinners"),
+            "prizeDescription": doc.get("prizeDescription"),
+            "winnersSeatNumbers": doc.get("winnersSeatNumbers") or []
+        })
+
+    # Winners per prizeRank
+    pipeline = [
+        {"$match": {"contestId": ObjectId(contest_id)}},
+        {"$group": {"_id": "$prizeRank", "count": {"$sum": 1}}},
+        {"$sort": {"_id": 1}}
+    ]
+    counts = {i["_id"]: i["count"] async for i in db.winners.aggregate(pipeline)}
+
+    # Merge
+    for p in prizes:
+        p["winnersCount"] = counts.get(p["prizeRank"], 0)
+
+    # Totals
+    total_winners = sum(p.get("winnersCount", 0) for p in prizes)
+    total_prize = sum((p.get("prizeAmount", 0) or 0) * (p.get("numberOfWinners", 0) or 0) for p in prizes)
+
+    return {
+        "contestId": contest_id,
+        "totalWinners": total_winners,
+        "totalPrizeConfigured": total_prize,
+        "prizes": prizes
+    }
+
 @router.put("/withdrawals/{withdrawal_id}/status")
 async def update_withdrawal_status(
     withdrawal_id: str,
