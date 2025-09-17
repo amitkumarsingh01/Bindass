@@ -89,7 +89,7 @@ export default function DashboardLayout() {
 
 function TopBar() {
   const [val, setVal] = useState(localStorage.getItem('admin_userId') || 'admin')
-  const [showImpersonate, setShowImpersonate] = useState(false)
+  const [showImpersonate] = useState(false)
   
   const apply = () => {
     localStorage.setItem('admin_userId', val || 'admin')

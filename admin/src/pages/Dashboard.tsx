@@ -143,7 +143,6 @@ export default function Dashboard() {
                 card.changeType === 'warning' ? 'bg-yellow-100 text-yellow-700' :
                 'bg-gray-100 text-gray-700'
               }`}>
-                {card.change}
               </div>
             </div>
             <div>

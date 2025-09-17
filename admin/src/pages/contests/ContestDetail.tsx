@@ -43,17 +43,6 @@ export default function ContestDetail() {
     })()
   }, [id, categoryId])
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A'
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
   const getStatusColor = (status: string, isDrawCompleted?: boolean) => {
     if (isDrawCompleted) return 'bg-purple-100 text-purple-700'
     if (status === 'active') return 'bg-green-100 text-green-700'
