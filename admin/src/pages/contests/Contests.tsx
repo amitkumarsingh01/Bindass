@@ -255,7 +255,7 @@ export default function Contests() {
               <div className="mt-6 pt-4 border-t border-gray-100">
                 <div className="grid grid-cols-2 gap-2">
                   <Link
-                    to={`/contests/${contest.id}/detail`}
+                    to={`/contests/${contest.id}`}
                     className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 text-sm font-medium text-center"
                   >
                     View Details

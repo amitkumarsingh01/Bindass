@@ -51,7 +51,6 @@ export default function Dashboard() {
       color: 'from-blue-500 to-blue-600',
       bgColor: 'from-blue-50 to-blue-100',
       textColor: 'text-blue-700',
-      change: '+12%',
       changeType: 'positive'
     },
     { 
@@ -61,7 +60,6 @@ export default function Dashboard() {
       color: 'from-green-500 to-green-600',
       bgColor: 'from-green-50 to-green-100',
       textColor: 'text-green-700',
-      change: '+8%',
       changeType: 'positive'
     },
     { 
@@ -71,7 +69,6 @@ export default function Dashboard() {
       color: 'from-purple-500 to-purple-600',
       bgColor: 'from-purple-50 to-purple-100',
       textColor: 'text-purple-700',
-      change: '+3',
       changeType: 'positive'
     },
     { 
@@ -81,7 +78,6 @@ export default function Dashboard() {
       color: 'from-orange-500 to-orange-600',
       bgColor: 'from-orange-50 to-orange-100',
       textColor: 'text-orange-700',
-      change: 'Live',
       changeType: 'neutral'
     },
     { 
@@ -91,7 +87,6 @@ export default function Dashboard() {
       color: 'from-indigo-500 to-indigo-600',
       bgColor: 'from-indigo-50 to-indigo-100',
       textColor: 'text-indigo-700',
-      change: '+25%',
       changeType: 'positive'
     },
     { 
@@ -101,7 +96,6 @@ export default function Dashboard() {
       color: 'from-yellow-500 to-yellow-600',
       bgColor: 'from-yellow-50 to-yellow-100',
       textColor: 'text-yellow-700',
-      change: 'Needs Review',
       changeType: 'warning'
     },
     { 
@@ -111,7 +105,6 @@ export default function Dashboard() {
       color: 'from-emerald-500 to-emerald-600',
       bgColor: 'from-emerald-50 to-emerald-100',
       textColor: 'text-emerald-700',
-      change: '+15%',
       changeType: 'positive'
     },
   ]
@@ -181,72 +174,6 @@ export default function Dashboard() {
             <span className="text-2xl group-hover:scale-110 transition-transform">🖼️</span>
             <span className="font-semibold">Manage Sliders</span>
           </button>
-        </div>
-      </div>
-
-      {/* System Status */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
-          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <span className="text-2xl">⚡</span>
-            System Status
-          </h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-              <span className="font-medium text-green-800">API Server</span>
-              <span className="flex items-center gap-2 text-green-600">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                Online
-              </span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-              <span className="font-medium text-green-800">Database</span>
-              <span className="flex items-center gap-2 text-green-600">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                Connected
-              </span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-              <span className="font-medium text-blue-800">Last Backup</span>
-              <span className="text-blue-600">2 hours ago</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
-          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <span className="text-2xl">📈</span>
-            Recent Activity
-          </h3>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-blue-600 text-sm">👤</span>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-800">New user registered</p>
-                <p className="text-xs text-gray-500">2 minutes ago</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                <span className="text-green-600 text-sm">🎯</span>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-800">Contest created</p>
-                <p className="text-xs text-gray-500">15 minutes ago</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                <span className="text-yellow-600 text-sm">💰</span>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-800">Withdrawal requested</p>
-                <p className="text-xs text-gray-500">1 hour ago</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

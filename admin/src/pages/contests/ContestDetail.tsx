@@ -179,31 +179,6 @@ export default function ContestDetail() {
               ></div>
             </div>
           </div>
-
-          {/* Dates */}
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-              <span className="text-2xl">📅</span>
-              <div>
-                <p className="text-sm text-gray-500">Start Date</p>
-                <p className="font-semibold text-gray-800">{formatDate(overview?.contestStartDate)}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-              <span className="text-2xl">🏁</span>
-              <div>
-                <p className="text-sm text-gray-500">End Date</p>
-                <p className="font-semibold text-gray-800">{formatDate(overview?.contestEndDate)}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-              <span className="text-2xl">🎲</span>
-              <div>
-                <p className="text-sm text-gray-500">Draw Date</p>
-                <p className="font-semibold text-gray-800">{formatDate(overview?.drawDate)}</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 

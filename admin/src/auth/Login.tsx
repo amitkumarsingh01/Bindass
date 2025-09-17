@@ -112,29 +112,6 @@ export default function Login() {
             </form>
           </div>
         </div>
-
-        {/* Footer Info */}
-        <div className="mt-8 text-center">
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center justify-center gap-2">
-              <span className="text-xl">🔑</span>
-              Test Credentials
-            </h3>
-            <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex items-center justify-center gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                <span><strong>admin</strong> / admin123#</span>
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                <span><strong>test</strong> / test123#</span>
-              </div>
-            </div>
-            <p className="text-xs text-gray-500 mt-3">
-              Use any of these credentials to access the admin panel
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   )

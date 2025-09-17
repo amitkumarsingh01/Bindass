@@ -110,14 +110,6 @@ function TopBar() {
       
       <div className="flex items-center gap-4">
         <div className="relative">
-          <button 
-            onClick={() => setShowImpersonate(!showImpersonate)}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:shadow-md transition-all duration-200"
-          >
-            <span className="text-lg">👤</span>
-            <span className="text-sm font-medium text-gray-700">Impersonate User</span>
-            <span className="text-gray-400">▼</span>
-          </button>
           
           {showImpersonate && (
             <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 z-50">
