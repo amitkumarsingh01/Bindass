@@ -198,6 +198,7 @@ async def get_contest_winners(contest_id: str):
         {"$unwind": "$user"},
         {
             "$project": {
+                "_id": 0,
                 "seatNumber": 1,
                 "categoryName": 1,
                 "prizeRank": 1,
