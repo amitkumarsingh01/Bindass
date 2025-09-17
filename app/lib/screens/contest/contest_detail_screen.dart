@@ -7,10 +7,7 @@ import 'seat_selection_screen.dart';
 class ContestDetailScreen extends StatefulWidget {
   final String contestId;
 
-  const ContestDetailScreen({
-    super.key,
-    required this.contestId,
-  });
+  const ContestDetailScreen({super.key, required this.contestId});
 
   @override
   State<ContestDetailScreen> createState() => _ContestDetailScreenState();
@@ -34,7 +31,10 @@ class _ContestDetailScreenState extends State<ContestDetailScreen>
   }
 
   Future<void> _loadContestData() async {
-    final contestProvider = Provider.of<ContestProvider>(context, listen: false);
+    final contestProvider = Provider.of<ContestProvider>(
+      context,
+      listen: false,
+    );
     await Future.wait([
       contestProvider.loadContest(widget.contestId),
       contestProvider.loadContestCategories(widget.contestId),
@@ -68,9 +68,7 @@ class _ContestDetailScreenState extends State<ContestDetailScreen>
       body: Consumer<ContestProvider>(
         builder: (context, contestProvider, child) {
           if (contestProvider.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (contestProvider.error != null) {
@@ -78,11 +76,7 @@ class _ContestDetailScreenState extends State<ContestDetailScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red,
-                  ),
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
                   Text(
                     'Error: ${contestProvider.error}',
@@ -100,9 +94,7 @@ class _ContestDetailScreenState extends State<ContestDetailScreen>
           }
 
           if (contestProvider.currentContest == null) {
-            return const Center(
-              child: Text('Contest not found'),
-            );
+            return const Center(child: Text('Contest not found'));
           }
 
           return TabBarView(
@@ -111,9 +103,13 @@ class _ContestDetailScreenState extends State<ContestDetailScreen>
               _DetailsTab(contest: contestProvider.currentContest!),
               _CategoriesTab(
                 contestId: widget.contestId,
-                contestName: contestProvider.currentContest?['contestName'] ?? 'Contest',
-                ticketPrice: (contestProvider.currentContest?['ticketPrice'] ?? 0).toDouble(),
-                categories: contestProvider.contestCategories?['categories'] ?? [],
+                contestName:
+                    contestProvider.currentContest?['contestName'] ?? 'Contest',
+                ticketPrice:
+                    (contestProvider.currentContest?['ticketPrice'] ?? 0)
+                        .toDouble(),
+                categories:
+                    contestProvider.contestCategories?['categories'] ?? [],
               ),
               _LeaderboardTab(leaderboard: contestProvider.contestLeaderboard),
               _WinnersTab(winners: contestProvider.contestWinners),
@@ -154,23 +150,25 @@ class _DetailsTab extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Prize Money
                   _InfoRow(
                     icon: Icons.attach_money,
                     label: 'Total Prize Money',
-                    value: '₹${contest['totalPrizeMoney']?.toStringAsFixed(0) ?? '0'}',
+                    value:
+                        '₹${contest['totalPrizeMoney']?.toStringAsFixed(0) ?? '0'}',
                     valueColor: Colors.green,
                   ),
-                  
+
                   // Ticket Price
                   _InfoRow(
                     icon: Icons.confirmation_number,
                     label: 'Ticket Price',
-                    value: '₹${contest['ticketPrice']?.toStringAsFixed(0) ?? '0'}',
+                    value:
+                        '₹${contest['ticketPrice']?.toStringAsFixed(0) ?? '0'}',
                     valueColor: Colors.orange,
                   ),
-                  
+
                   // Total Seats
                   _InfoRow(
                     icon: Icons.event_seat,
@@ -178,7 +176,7 @@ class _DetailsTab extends StatelessWidget {
                     value: '${contest['totalSeats'] ?? 0}',
                     valueColor: Colors.blue,
                   ),
-                  
+
                   // Available Seats
                   _InfoRow(
                     icon: Icons.event_available,
@@ -186,7 +184,7 @@ class _DetailsTab extends StatelessWidget {
                     value: '${contest['availableSeats'] ?? 0}',
                     valueColor: Colors.purple,
                   ),
-                  
+
                   // Total Winners
                   _InfoRow(
                     icon: Icons.emoji_events,
@@ -194,21 +192,23 @@ class _DetailsTab extends StatelessWidget {
                     value: '${contest['totalWinners'] ?? 0}',
                     valueColor: Colors.amber,
                   ),
-                  
+
                   // Status
                   _InfoRow(
                     icon: Icons.info,
                     label: 'Status',
-                    value: contest['status']?.toString().toUpperCase() ?? 'UNKNOWN',
+                    value:
+                        contest['status']?.toString().toUpperCase() ??
+                        'UNKNOWN',
                     valueColor: _getStatusColor(contest['status']),
                   ),
                 ],
               ),
             ),
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Action Buttons
           Row(
             children: [
@@ -220,7 +220,8 @@ class _DetailsTab extends StatelessWidget {
                         builder: (context) => SeatSelectionScreen(
                           contestId: contest['id'],
                           contestName: contest['contestName'],
-                          ticketPrice: contest['ticketPrice']?.toDouble() ?? 0.0,
+                          ticketPrice:
+                              contest['ticketPrice']?.toDouble() ?? 0.0,
                         ),
                       ),
                     );
@@ -290,16 +291,17 @@ class _CategoriesTab extends StatelessWidget {
             ),
             title: Text(
               category['categoryName'] ?? 'Category',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Seats: ${category['seatRangeStart'] ?? 0} - ${category['seatRangeEnd'] ?? 0}'),
-                Text('Available: ${category['availableSeats'] ?? 0} / ${category['totalSeats'] ?? 0}'),
+                Text(
+                  'Seats: ${category['seatRangeStart'] ?? 0} - ${category['seatRangeEnd'] ?? 0}',
+                ),
+                Text(
+                  'Available: ${category['availableSeats'] ?? 0} / ${category['totalSeats'] ?? 0}',
+                ),
               ],
             ),
             trailing: ElevatedButton(
@@ -333,9 +335,7 @@ class _LeaderboardTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (leaderboard == null || leaderboard!['leaderboard'] == null) {
-      return const Center(
-        child: Text('No leaderboard data available'),
-      );
+      return const Center(child: Text('No leaderboard data available'));
     }
 
     final leaderboardData = leaderboard!['leaderboard'] as List<dynamic>;
@@ -362,9 +362,7 @@ class _LeaderboardTab extends StatelessWidget {
               item['userName'] ?? 'Unknown',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            subtitle: Text(
-              '${item['totalPurchases'] ?? 0} seats purchased',
-            ),
+            subtitle: Text('${item['totalPurchases'] ?? 0} seats purchased'),
             trailing: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -404,9 +402,7 @@ class _WinnersTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (winners == null || winners!['winners'] == null) {
-      return const Center(
-        child: Text('No winners data available'),
-      );
+      return const Center(child: Text('No winners data available'));
     }
 
     final winnersData = winners!['winners'] as List<dynamic>;
@@ -456,7 +452,9 @@ class _WinnersTab extends StatelessWidget {
                 Text(
                   winner['isPrizeClaimed'] == true ? 'Claimed' : 'Pending',
                   style: TextStyle(
-                    color: winner['isPrizeClaimed'] == true ? Colors.green : Colors.orange,
+                    color: winner['isPrizeClaimed'] == true
+                        ? Colors.green
+                        : Colors.orange,
                     fontSize: 12,
                   ),
                 ),
@@ -478,9 +476,7 @@ class _MyPurchasesTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (myPurchases == null || myPurchases!['purchases'] == null) {
-      return const Center(
-        child: Text('No purchases yet'),
-      );
+      return const Center(child: Text('No purchases yet'));
     }
 
     final purchases = myPurchases!['purchases'] as List<dynamic>;
@@ -503,7 +499,10 @@ class _MyPurchasesTab extends StatelessWidget {
                   children: [
                     Text(
                       group['categoryName']?.toString() ?? 'Category',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                     Text(
                       'Total: ${group['totalSeats'] ?? seats.length}',
@@ -522,7 +521,10 @@ class _MyPurchasesTab extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: Text(
                     'Amount: ₹${(group['totalAmount'] ?? 0).toString()}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
                   ),
                 ),
               ],
@@ -555,10 +557,7 @@ class _InfoRow extends StatelessWidget {
         children: [
           Icon(icon, size: 20, color: Colors.grey[600]),
           const SizedBox(width: 12),
-          Text(
-            '$label: ',
-            style: const TextStyle(fontSize: 16),
-          ),
+          Text('$label: ', style: const TextStyle(fontSize: 16)),
           Text(
             value,
             style: TextStyle(

@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ContestProvider with ChangeNotifier {
   ApiService? _apiService;
-  
+
   bool _isLoading = false;
   List<dynamic> _contests = [];
   Map<String, dynamic>? _currentContest;
@@ -33,7 +33,7 @@ class ContestProvider with ChangeNotifier {
 
   Future<void> loadContests() async {
     if (_apiService == null) return;
-    
+
     _setLoading(true);
     _clearError();
 
@@ -49,7 +49,7 @@ class ContestProvider with ChangeNotifier {
 
   Future<void> loadContest(String contestId) async {
     if (_apiService == null) return;
-    
+
     _setLoading(true);
     _clearError();
 
@@ -65,7 +65,7 @@ class ContestProvider with ChangeNotifier {
 
   Future<void> loadContestCategories(String contestId) async {
     if (_apiService == null) return;
-    
+
     _setLoading(true);
     _clearError();
 
@@ -81,7 +81,7 @@ class ContestProvider with ChangeNotifier {
 
   Future<void> loadContestLeaderboard(String contestId) async {
     if (_apiService == null) return;
-    
+
     _setLoading(true);
     _clearError();
 
@@ -97,7 +97,7 @@ class ContestProvider with ChangeNotifier {
 
   Future<void> loadContestWinners(String contestId) async {
     if (_apiService == null) return;
-    
+
     _setLoading(true);
     _clearError();
 
@@ -113,7 +113,7 @@ class ContestProvider with ChangeNotifier {
 
   Future<void> loadMyPurchases(String contestId) async {
     if (_apiService == null) return;
-    
+
     _setLoading(true);
     _clearError();
 
@@ -129,12 +129,15 @@ class ContestProvider with ChangeNotifier {
 
   Future<void> loadCategorySeats(String contestId, int categoryId) async {
     if (_apiService == null) return;
-    
+
     _setLoading(true);
     _clearError();
 
     try {
-      _categorySeats = await _apiService!.getCategorySeats(contestId, categoryId);
+      _categorySeats = await _apiService!.getCategorySeats(
+        contestId,
+        categoryId,
+      );
       notifyListeners();
     } catch (e) {
       _setError(e.toString());
@@ -143,9 +146,13 @@ class ContestProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> purchaseSeats(String contestId, List<int> seatNumbers, String paymentMethod) async {
+  Future<bool> purchaseSeats(
+    String contestId,
+    List<int> seatNumbers,
+    String paymentMethod,
+  ) async {
     if (_apiService == null) return false;
-    
+
     _setLoading(true);
     _clearError();
 

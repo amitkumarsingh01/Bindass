@@ -26,39 +26,115 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white p-4">
-      <div className="w-full max-w-sm bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold text-primary text-center mb-6">Admin Login</h1>
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Username</label>
-            <input
-              className="w-full border rounded px-3 py-2 outline-primary focus:ring-2 focus:ring-primary/30"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="admin"
-            />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Header Section */}
+        <div className="text-center mb-8">
+          <div className="w-20 h-20 bg-gradient-to-br from-primary to-yellow-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl">
+            <span className="text-4xl text-white">🎯</span>
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Password</label>
-            <input
-              type="password"
-              className="w-full border rounded px-3 py-2 outline-primary focus:ring-2 focus:ring-primary/30"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="admin123#"
-            />
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">
+            BINDASS Admin
+          </h1>
+          <p className="text-gray-600 text-lg">Lottery Management System</p>
+        </div>
+
+        {/* Login Card */}
+        <div className="bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden">
+          <div className="bg-gradient-to-r from-primary to-yellow-500 p-8 text-white">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold mb-2">Welcome Back!</h2>
+              <p className="text-white/80">Sign in to access the admin dashboard</p>
+            </div>
           </div>
-          {error && <p className="text-red-600 text-sm">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary text-white py-2 rounded hover:opacity-95 disabled:opacity-60"
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-          <p className="text-xs text-gray-500 mt-2">Seed users: admin/admin123# • test/test123#</p>
-        </form>
+          
+          <div className="p-8">
+            <form onSubmit={onSubmit} className="space-y-6">
+              <div>
+                <label className="block text-lg font-semibold text-gray-800 mb-3">
+                  Username
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl">👤</span>
+                  <input
+                    className="w-full border border-gray-200 rounded-xl pl-12 pr-4 py-4 focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-lg"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Enter your username"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-lg font-semibold text-gray-800 mb-3">
+                  Password
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl">🔒</span>
+                  <input
+                    type="password"
+                    className="w-full border border-gray-200 rounded-xl pl-12 pr-4 py-4 focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-lg"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    required
+                  />
+                </div>
+              </div>
+              
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-500 text-xl">⚠️</span>
+                    <p className="text-red-700 font-medium">{error}</p>
+                  </div>
+                </div>
+              )}
+              
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-primary to-yellow-500 text-white py-4 rounded-xl hover:shadow-lg transition-all duration-200 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Signing in...
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-3">
+                    <span className="text-xl">🚀</span>
+                    Sign In to Dashboard
+                  </div>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Footer Info */}
+        <div className="mt-8 text-center">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center justify-center gap-2">
+              <span className="text-xl">🔑</span>
+              Test Credentials
+            </h3>
+            <div className="space-y-2 text-sm text-gray-600">
+              <div className="flex items-center justify-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                <span><strong>admin</strong> / admin123#</span>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                <span><strong>test</strong> / test123#</span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-3">
+              Use any of these credentials to access the admin panel
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   )

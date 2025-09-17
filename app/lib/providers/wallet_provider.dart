@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class WalletProvider with ChangeNotifier {
   ApiService? _apiService;
-  
+
   bool _isLoading = false;
   Map<String, dynamic>? _walletBalance;
   List<dynamic> _transactions = [];
@@ -27,7 +27,7 @@ class WalletProvider with ChangeNotifier {
 
   Future<void> loadWalletBalance() async {
     if (_apiService == null) return;
-    
+
     _setLoading(true);
     _clearError();
 
@@ -43,7 +43,7 @@ class WalletProvider with ChangeNotifier {
 
   Future<void> loadTransactions() async {
     if (_apiService == null) return;
-    
+
     _setLoading(true);
     _clearError();
 
@@ -60,7 +60,7 @@ class WalletProvider with ChangeNotifier {
 
   Future<bool> addMoneyToWallet(double amount, String description) async {
     if (_apiService == null) return false;
-    
+
     _setLoading(true);
     _clearError();
 
@@ -80,14 +80,22 @@ class WalletProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> requestWithdrawal(double amount, String bankDetailsId, String withdrawalMethod) async {
+  Future<bool> requestWithdrawal(
+    double amount,
+    String bankDetailsId,
+    String withdrawalMethod,
+  ) async {
     if (_apiService == null) return false;
-    
+
     _setLoading(true);
     _clearError();
 
     try {
-      await _apiService!.requestWithdrawal(amount, bankDetailsId, withdrawalMethod);
+      await _apiService!.requestWithdrawal(
+        amount,
+        bankDetailsId,
+        withdrawalMethod,
+      );
       await loadWalletBalance();
       await loadTransactions();
       return true;
@@ -101,7 +109,7 @@ class WalletProvider with ChangeNotifier {
 
   Future<void> loadBankDetails() async {
     if (_apiService == null) return;
-    
+
     _setLoading(true);
     _clearError();
 
@@ -117,7 +125,7 @@ class WalletProvider with ChangeNotifier {
 
   Future<bool> addBankDetails(Map<String, dynamic> bankData) async {
     if (_apiService == null) return false;
-    
+
     _setLoading(true);
     _clearError();
 
