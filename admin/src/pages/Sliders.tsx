@@ -19,6 +19,16 @@ export default function Sliders() {
   const [error, setError] = useState('')
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingSlider, setEditingSlider] = useState<Slider | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  // Form state
+  const [title, setTitle] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [linkUrl, setLinkUrl] = useState('')
+  const [description, setDescription] = useState('')
+  const [order, setOrder] = useState<number>(1)
+  const [isActive, setIsActive] = useState(true)
 
   const load = async () => {
     setLoading(true)
@@ -45,6 +55,67 @@ export default function Sliders() {
   }
 
   useEffect(() => { load() }, [])
+
+  useEffect(() => {
+    // Prefill form when opening modal
+    if (editingSlider) {
+      setTitle(editingSlider.title || '')
+      setImageUrl(editingSlider.imageUrl || '')
+      setImageFile(null)
+      setLinkUrl(editingSlider.linkUrl || '')
+      setDescription(editingSlider.description || '')
+      setOrder(editingSlider.order || 1)
+      setIsActive(editingSlider.isActive ?? true)
+    } else if (showCreateForm) {
+      setTitle('')
+      setImageUrl('')
+      setImageFile(null)
+      setLinkUrl('')
+      setDescription('')
+      setOrder(Math.max(1, items.length + 1))
+      setIsActive(true)
+    }
+  }, [editingSlider, showCreateForm])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      if (editingSlider) {
+        // Update (edit) path - backend update accepts only fields (no file upload here)
+        await api.put(`/admin/home-sliders/${editingSlider.id}`, {
+          title,
+          image_url: imageUrl || undefined,
+          link_url: linkUrl || undefined,
+          description: description || undefined,
+          order,
+          is_active: isActive,
+        })
+      } else {
+        // Create path - supports file upload via multipart/form-data
+        const form = new FormData()
+        form.append('title', title)
+        if (imageFile) {
+          form.append('image', imageFile)
+        } else if (imageUrl) {
+          form.append('image_url', imageUrl)
+        }
+        if (linkUrl) form.append('link_url', linkUrl)
+        if (description) form.append('description', description)
+        form.append('order', String(order))
+        await api.post('/admin/home-sliders', form, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+      }
+      await load()
+      setShowCreateForm(false)
+      setEditingSlider(null)
+    } catch (e: any) {
+      alert(e?.response?.data?.detail || 'Failed to save slider')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -287,7 +358,7 @@ export default function Sliders() {
             </div>
             
             <div className="p-8">
-              <form className="space-y-6">
+              <form className="space-y-6" onSubmit={handleSubmit}>
                 <div>
                   <label className="block text-lg font-semibold text-gray-800 mb-3">
                     Slider Title
@@ -298,11 +369,43 @@ export default function Sliders() {
                       type="text" 
                       className="w-full border border-gray-200 rounded-xl pl-12 pr-4 py-4 focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-lg" 
                       placeholder="Enter an attractive slider title"
-                      defaultValue={editingSlider?.title || ''}
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      required
                     />
                   </div>
                 </div>
                 
+                {/* Upload Image (create supports file upload; edit uses URL update) */}
+                <div>
+                  <label className="block text-lg font-semibold text-gray-800 mb-3">
+                    Upload Image {editingSlider ? <span className="text-sm text-gray-500">(upload supported only on create)</span> : null}
+                  </label>
+                  <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+                    <label className="inline-flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors">
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        className="hidden"
+                        disabled={!!editingSlider}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null
+                          setImageFile(file || null)
+                        }}
+                      />
+                      <span className="text-xl">📤</span>
+                      <span className="text-gray-800 font-medium">Choose Image</span>
+                    </label>
+                    {imageFile && (
+                      <span className="text-sm text-gray-600">{imageFile.name}</span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-500 mt-2 flex items-center gap-1">
+                    <span>💡</span>
+                    <span>Upload a high-quality image (1920x1080 recommended). Or provide a URL below.</span>
+                  </p>
+                </div>
+
                 <div>
                   <label className="block text-lg font-semibold text-gray-800 mb-3">
                     Image URL
@@ -313,7 +416,8 @@ export default function Sliders() {
                       type="url" 
                       className="w-full border border-gray-200 rounded-xl pl-12 pr-4 py-4 focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-lg" 
                       placeholder="https://example.com/image.jpg"
-                      defaultValue={editingSlider?.imageUrl || ''}
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
                     />
                   </div>
                   <p className="text-sm text-gray-500 mt-2 flex items-center gap-1">
@@ -332,7 +436,8 @@ export default function Sliders() {
                       type="url" 
                       className="w-full border border-gray-200 rounded-xl pl-12 pr-4 py-4 focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-lg" 
                       placeholder="https://example.com"
-                      defaultValue={editingSlider?.linkUrl || ''}
+                      value={linkUrl}
+                      onChange={(e) => setLinkUrl(e.target.value)}
                     />
                   </div>
                   <p className="text-sm text-gray-500 mt-2 flex items-center gap-1">
@@ -351,7 +456,8 @@ export default function Sliders() {
                       className="w-full border border-gray-200 rounded-xl pl-12 pr-4 py-4 focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-lg" 
                       rows={4}
                       placeholder="Enter a brief description for the slider"
-                      defaultValue={editingSlider?.description || ''}
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
                     />
                   </div>
                 </div>
@@ -367,7 +473,8 @@ export default function Sliders() {
                         type="number" 
                         className="w-full border border-gray-200 rounded-xl pl-12 pr-4 py-4 focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-lg" 
                         placeholder="1"
-                        defaultValue={editingSlider?.order || 1}
+                        value={order}
+                        onChange={(e) => setOrder(parseInt(e.target.value || '1', 10))}
                         min="1"
                       />
                     </div>
@@ -379,7 +486,8 @@ export default function Sliders() {
                       <input 
                         type="checkbox" 
                         className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
-                        defaultChecked={editingSlider?.isActive ?? true}
+                        checked={isActive}
+                        onChange={(e) => setIsActive(e.target.checked)}
                       />
                       <div>
                         <span className="text-lg font-medium text-gray-800">Active Status</span>
@@ -402,9 +510,10 @@ export default function Sliders() {
                   </button>
                   <button 
                     type="submit"
-                    className="flex-1 px-6 py-4 bg-gradient-to-r from-primary to-yellow-500 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-medium text-lg"
+                    disabled={saving}
+                    className="flex-1 px-6 py-4 bg-gradient-to-r from-primary to-yellow-500 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-medium text-lg disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {editingSlider ? 'Update Slider' : 'Create Slider'}
+                    {saving ? (editingSlider ? 'Updating...' : 'Creating...') : (editingSlider ? 'Update Slider' : 'Create Slider')}
                   </button>
                 </div>
               </form>
