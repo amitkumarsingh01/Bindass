@@ -14,19 +14,12 @@ async def register_user(user: UserCreate):
     """Register a new user"""
     database = get_database()
     
-    # Check if user already exists
-    existing_user = await database.users.find_one({
-        "$or": [
-            {"userId": user.userId},
-            {"email": user.email},
-            {"phoneNumber": user.phoneNumber}
-        ]
-    })
-    
-    if existing_user:
+    # Only enforce uniqueness on email
+    existing_by_email = await database.users.find_one({"email": user.email})
+    if existing_by_email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this userId, email, or phone number already exists"
+            detail="User with this email already exists"
         )
     
     # Hash password
