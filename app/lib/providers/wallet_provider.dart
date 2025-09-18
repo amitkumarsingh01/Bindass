@@ -48,8 +48,8 @@ class WalletProvider with ChangeNotifier {
     _clearError();
 
     try {
-      final response = await _apiService!.getWalletTransactions();
-      _transactions = response['transactions'] ?? [];
+      final response = await _apiService!.getPayments();
+      _transactions = response['items'] ?? [];
       notifyListeners();
     } catch (e) {
       _setError(e.toString());

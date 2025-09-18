@@ -12,7 +12,7 @@ class WithdrawalScreen extends StatefulWidget {
 class _WithdrawalScreenState extends State<WithdrawalScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
-  
+
   @override
   void initState() {
     super.initState();
@@ -30,9 +30,12 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
   Future<void> _requestWithdrawal() async {
     if (_formKey.currentState!.validate()) {
       final amount = double.parse(_amountController.text);
-      
-      final walletProvider = Provider.of<WalletProvider>(context, listen: false);
-      
+
+      final walletProvider = Provider.of<WalletProvider>(
+        context,
+        listen: false,
+      );
+
       if (walletProvider.bankDetails == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -60,7 +63,9 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(walletProvider.error ?? 'Failed to request withdrawal'),
+            content: Text(
+              walletProvider.error ?? 'Failed to request withdrawal',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -70,11 +75,48 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Theme(
+      data: Theme.of(context).copyWith(
+        primaryColor: const Color(0xFFdb9822),
+        colorScheme: Theme.of(context).colorScheme.copyWith(
+          primary: const Color(0xFFdb9822),
+          secondary: const Color(0xFFffb32c),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFdb9822), width: 2),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.red, width: 2),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.red, width: 2),
+          ),
+        ),
+        textTheme: Theme.of(context).textTheme.copyWith(
+          bodyLarge: const TextStyle(color: Colors.black87),
+          bodyMedium: const TextStyle(color: Colors.black87),
+          bodySmall: const TextStyle(color: Colors.black87),
+        ),
+      ),
+      child: Scaffold(
       appBar: AppBar(
-        title: const Text('Withdraw Money'),
-        backgroundColor: const Color(0xFF6A1B9A),
-        foregroundColor: Colors.white,
+        title: const Text(
+          'Withdraw Money',
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -88,8 +130,11 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF6A1B9A), Color(0xFF8E24AA)],
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFFdb9822).withOpacity(0.8),
+                      const Color(0xFFffb32c).withOpacity(0.9),
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -98,7 +143,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                 child: const Column(
                   children: [
                     Icon(
-                      Icons.money_off,
+                      Icons.money_off_rounded,
                       size: 48,
                       color: Colors.white,
                     ),
@@ -106,9 +151,10 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                     Text(
                       'Withdraw Money',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
+                        letterSpacing: 0.5,
                       ),
                     ),
                     SizedBox(height: 8),
@@ -116,16 +162,17 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                       'Transfer money from your wallet to your bank account',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white70,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
                       ),
                       textAlign: TextAlign.center,
                     ),
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Current Balance
               Consumer<WalletProvider>(
                 builder: (context, walletProvider, child) {
@@ -133,13 +180,19 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.green[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green[200]!),
+                      color: const Color(0xFFdb9822).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFFdb9822).withOpacity(0.3),
+                        width: 1,
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.account_balance_wallet, color: Colors.green),
+                        const Icon(
+                          Icons.account_balance_wallet_rounded,
+                          color: Color(0xFFdb9822),
+                        ),
                         const SizedBox(width: 12),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,15 +201,17 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                               'Available Balance',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.green,
+                                color: Color(0xFFdb9822),
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                             Text(
                               '₹${walletProvider.walletBalance?['walletBalance']?.toStringAsFixed(2) ?? '0.00'}',
                               style: const TextStyle(
-                                fontSize: 20,
+                                fontSize: 22,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.green,
+                                color: Color(0xFFdb9822),
+                                letterSpacing: 0.5,
                               ),
                             ),
                           ],
@@ -166,16 +221,14 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                   );
                 },
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Bank Details
               Consumer<WalletProvider>(
                 builder: (context, walletProvider, child) {
                   if (walletProvider.isLoading) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
+                    return const Center(child: CircularProgressIndicator());
                   }
 
                   if (walletProvider.bankDetails == null) {
@@ -184,12 +237,16 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.red[50],
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.red[200]!),
                       ),
                       child: Column(
                         children: [
-                          const Icon(Icons.error, color: Colors.red, size: 32),
+                          const Icon(
+                            Icons.error_rounded,
+                            color: Colors.red,
+                            size: 32,
+                          ),
                           const SizedBox(height: 8),
                           const Text(
                             'Bank Details Required',
@@ -206,11 +263,35 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () {
-                              // Navigate to add bank details
-                            },
-                            child: const Text('Add Bank Details'),
+                          Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFdb9822), Color(0xFFffb32c)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: ElevatedButton(
+                              onPressed: () {
+                                // Navigate to add bank details
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                'Add Bank Details',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -222,64 +303,101 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue[200]!),
+                      color: const Color(0xFFdb9822).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFFdb9822).withOpacity(0.3),
+                        width: 1,
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Row(
                           children: [
-                            Icon(Icons.account_balance, color: Colors.blue),
+                            Icon(
+                              Icons.account_balance_rounded,
+                              color: Color(0xFFdb9822),
+                            ),
                             SizedBox(width: 8),
                             Text(
                               'Bank Details',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.blue,
+                                color: Color(0xFFdb9822),
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 12),
-                        Text('Bank: ${bankDetails['bankName'] ?? 'N/A'}'),
-                        Text('Account: ****${bankDetails['accountNumber']?.toString().substring(bankDetails['accountNumber'].toString().length - 4) ?? 'N/A'}'),
-                        Text('IFSC: ${bankDetails['ifscCode'] ?? 'N/A'}'),
-                        Text('Status: ${bankDetails['isVerified'] == true ? 'Verified' : 'Pending Verification'}'),
+                        Text(
+                          'Bank: ${bankDetails['bankName'] ?? 'N/A'}',
+                          style: const TextStyle(color: Colors.black87),
+                        ),
+                        Text(
+                          'Account: ****${bankDetails['accountNumber']?.toString().substring(bankDetails['accountNumber'].toString().length - 4) ?? 'N/A'}',
+                          style: const TextStyle(color: Colors.black87),
+                        ),
+                        Text(
+                          'IFSC: ${bankDetails['ifscCode'] ?? 'N/A'}',
+                          style: const TextStyle(color: Colors.black87),
+                        ),
+                        Text(
+                          'Status: ${bankDetails['isVerified'] == true ? 'Verified' : 'Pending Verification'}',
+                          style: TextStyle(
+                            color: bankDetails['isVerified'] == true
+                                ? Colors.green
+                                : Colors.orange,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ],
                     ),
                   );
                 },
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Amount Input
               const Text(
                 'Withdrawal Amount',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF6A1B9A),
+                  color: Color(0xFFdb9822),
+                  letterSpacing: 0.5,
                 ),
               ),
               const SizedBox(height: 12),
-              
+
               TextFormField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   labelText: 'Amount (₹)',
-                  prefixIcon: const Icon(Icons.currency_rupee),
+                  prefixIcon: const Icon(
+                    Icons.currency_rupee_rounded,
+                    color: Color(0xFFdb9822),
+                  ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFF6A1B9A)),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFdb9822),
+                      width: 2,
+                    ),
                   ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[50],
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -292,75 +410,115 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                   if (amount < 100) {
                     return 'Minimum withdrawal amount is ₹100';
                   }
-                  
-                  final currentBalance = Provider.of<WalletProvider>(context, listen: false)
-                      .walletBalance?['walletBalance'] ?? 0.0;
+
+                  final currentBalance =
+                      Provider.of<WalletProvider>(
+                        context,
+                        listen: false,
+                      ).walletBalance?['walletBalance'] ??
+                      0.0;
                   if (amount > currentBalance) {
                     return 'Insufficient balance';
                   }
                   return null;
                 },
+                style: const TextStyle(color: Colors.black87),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Withdraw Button
               Consumer<WalletProvider>(
                 builder: (context, walletProvider, child) {
                   return SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: walletProvider.isLoading ? null : _requestWithdrawal,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: const Color(0xFF6A1B9A),
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFdb9822), Color(0xFFffb32c)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFdb9822).withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      child: walletProvider.isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                              'Request Withdrawal',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                      child: ElevatedButton(
+                        onPressed: walletProvider.isLoading
+                            ? null
+                            : _requestWithdrawal,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: walletProvider.isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text(
+                                'Request Withdrawal',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
+                      ),
                     ),
                   );
                 },
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Info Card
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.orange[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange[200]!),
+                  color: const Color(0xFFdb9822).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFdb9822).withOpacity(0.3),
+                    width: 1,
+                  ),
                 ),
                 child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.info, color: Colors.orange, size: 20),
+                        Icon(
+                          Icons.info_rounded,
+                          color: Color(0xFFdb9822),
+                          size: 20,
+                        ),
                         SizedBox(width: 8),
                         Text(
                           'Withdrawal Information',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Colors.orange,
+                            color: Color(0xFFdb9822),
+                            fontSize: 16,
                           ),
                         ),
                       ],
                     ),
-                    SizedBox(height: 8),
+                    SizedBox(height: 12),
                     Text(
                       '• Minimum withdrawal: ₹100\n• Processing time: 1-3 business days\n• Bank details must be verified\n• Only one pending withdrawal at a time',
                       style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.orange,
+                        fontSize: 14,
+                        color: Color(0xFFdb9822),
+                        height: 1.4,
                       ),
                     ),
                   ],
@@ -370,6 +528,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 }

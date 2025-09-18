@@ -20,10 +20,10 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _checkAuthStatus() async {
     await Future.delayed(const Duration(seconds: 2));
-    
+
     if (mounted) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
+
       if (authProvider.isAuthenticated) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const HomeScreen()),
@@ -39,62 +39,13 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF6A1B9A),
+      backgroundColor: Colors.white,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // App Logo
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.casino,
-                size: 60,
-                color: Color(0xFF6A1B9A),
-              ),
-            ),
-            const SizedBox(height: 30),
-            
-            // App Name
-            const Text(
-              'BINDASS GRAND',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: 2,
-              ),
-            ),
-            const SizedBox(height: 10),
-            
-            // Tagline
-            const Text(
-              'Your Lucky Numbers Await',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white70,
-                letterSpacing: 1,
-              ),
-            ),
-            const SizedBox(height: 50),
-            
-            // Loading indicator
-            const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
-          ],
+        child: Image.asset(
+          'assets/Logo2.gif',
+          width: 200,
+          height: 200,
+          fit: BoxFit.contain,
         ),
       ),
     );

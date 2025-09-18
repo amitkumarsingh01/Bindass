@@ -1,15 +1,18 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final SharedPreferences _prefs;
   late ApiService _apiService;
-  
+
   bool _isLoading = false;
   bool _isAuthenticated = false;
   Map<String, dynamic>? _user;
   String? _error;
+  String? _profilePictureUrl;
 
   AuthProvider(this._prefs) {
     _apiService = ApiService(_prefs);
@@ -22,12 +25,14 @@ class AuthProvider with ChangeNotifier {
   bool get isAuthenticated => _isAuthenticated;
   Map<String, dynamic>? get user => _user;
   String? get error => _error;
+  String? get profilePictureUrl => _profilePictureUrl;
 
   void _checkAuthStatus() {
     final userId = _prefs.getString('user_id');
     if (userId != null && userId.isNotEmpty) {
       _isAuthenticated = true;
       _loadUserData();
+      _loadProfilePicture();
     }
   }
 
@@ -38,6 +43,20 @@ class AuthProvider with ChangeNotifier {
     } catch (e) {
       await logout();
     }
+  }
+
+  Future<void> refreshUserData() async {
+    try {
+      _user = await _apiService.getCurrentUser();
+      notifyListeners();
+    } catch (e) {
+      await logout();
+    }
+  }
+
+  void _loadProfilePicture() {
+    _profilePictureUrl = _apiService.getProfilePictureUrl();
+    notifyListeners();
   }
 
   Future<bool> login(String identifier, String password) async {
@@ -79,6 +98,7 @@ class AuthProvider with ChangeNotifier {
     await _apiService.logout();
     _isAuthenticated = false;
     _user = null;
+    _profilePictureUrl = null;
     _clearError();
     notifyListeners();
   }
@@ -96,6 +116,60 @@ class AuthProvider with ChangeNotifier {
       return false;
     } finally {
       _setLoading(false);
+    }
+  }
+
+  Future<bool> uploadProfilePicture(File imageFile) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final result = await _apiService.uploadProfilePicture(imageFile);
+      _profilePictureUrl = result['imageUrl'];
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<bool> deleteProfilePicture() async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      await _apiService.deleteProfilePicture();
+      _profilePictureUrl = null;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<File?> pickImage({bool useCamera = false}) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: useCamera ? ImageSource.camera : ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        return File(image.path);
+      }
+      return null;
+    } catch (e) {
+      _setError('Failed to pick image: ${e.toString()}');
+      return null;
     }
   }
 

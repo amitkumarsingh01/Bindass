@@ -24,32 +24,48 @@ class _WalletScreenState extends State<WalletScreen> {
 
   Future<void> _loadWalletData() async {
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
-    await Future.wait([
-      walletProvider.loadWalletBalance(),
-      walletProvider.loadTransactions(),
-    ]);
+    await walletProvider.loadTransactions();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Wallet'),
-        backgroundColor: const Color(0xFF6A1B9A),
-        foregroundColor: Colors.white,
+        title: const Text(
+          'My Wallet',
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadWalletData,
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFdb9822).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.refresh_rounded,
+                color: Color(0xFFdb9822),
+                size: 22,
+              ),
+              onPressed: _loadWalletData,
+            ),
           ),
         ],
       ),
-      body: Consumer<WalletProvider>(
-        builder: (context, walletProvider, child) {
+      body: Consumer2<WalletProvider, AuthProvider>(
+        builder: (context, walletProvider, authProvider, child) {
           if (walletProvider.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           return RefreshIndicator(
@@ -61,31 +77,34 @@ class _WalletScreenState extends State<WalletScreen> {
                 children: [
                   // Wallet Balance Card
                   _WalletBalanceCard(
-                    balance: walletProvider.walletBalance?['walletBalance'] ?? 0.0,
-                    userName: walletProvider.walletBalance?['userName'] ?? 'User',
+                    balance:
+                        (authProvider.user?['walletBalance'] as num?)
+                            ?.toDouble() ??
+                        0.0,
+                    userName: authProvider.user?['userName'] ?? 'User',
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // Quick Actions
                   const Text(
                     'Quick Actions',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF6A1B9A),
+                      color: Color(0xFFdb9822),
+                      letterSpacing: 0.5,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   Row(
                     children: [
                       Expanded(
                         child: _ActionCard(
-                          icon: Icons.add,
+                          icon: Icons.add_rounded,
                           title: 'Add Money',
                           subtitle: 'Top up wallet',
-                          color: Colors.green,
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
@@ -98,10 +117,9 @@ class _WalletScreenState extends State<WalletScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _ActionCard(
-                          icon: Icons.money_off,
+                          icon: Icons.money_off_rounded,
                           title: 'Withdraw',
                           subtitle: 'Cash out',
-                          color: Colors.orange,
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
@@ -113,9 +131,9 @@ class _WalletScreenState extends State<WalletScreen> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // Recent Transactions
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -125,14 +143,16 @@ class _WalletScreenState extends State<WalletScreen> {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF6A1B9A),
+                          color: Color(0xFFdb9822),
+                          letterSpacing: 0.5,
                         ),
                       ),
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (context) => const TransactionHistoryScreen(),
+                              builder: (context) =>
+                                  const TransactionHistoryScreen(),
                             ),
                           );
                         },
@@ -140,18 +160,15 @@ class _WalletScreenState extends State<WalletScreen> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Transactions List
                   if (walletProvider.transactions.isEmpty)
                     const Center(
                       child: Text(
                         'No transactions yet',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
-                        ),
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
                       ),
                     )
                   else
@@ -178,10 +195,7 @@ class _WalletBalanceCard extends StatelessWidget {
   final double balance;
   final String userName;
 
-  const _WalletBalanceCard({
-    required this.balance,
-    required this.userName,
-  });
+  const _WalletBalanceCard({required this.balance, required this.userName});
 
   @override
   Widget build(BuildContext context) {
@@ -189,17 +203,20 @@ class _WalletBalanceCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6A1B9A), Color(0xFF8E24AA)],
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFdb9822).withOpacity(0.8),
+            const Color(0xFFffb32c).withOpacity(0.9),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
+            color: const Color(0xFFdb9822).withOpacity(0.15),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -209,7 +226,7 @@ class _WalletBalanceCard extends StatelessWidget {
           Row(
             children: [
               const Icon(
-                Icons.account_balance_wallet,
+                Icons.account_balance_wallet_rounded,
                 color: Colors.white,
                 size: 28,
               ),
@@ -217,8 +234,9 @@ class _WalletBalanceCard extends StatelessWidget {
               Text(
                 'Welcome, $userName',
                 style: const TextStyle(
-                  color: Colors.white70,
+                  color: Colors.white,
                   fontSize: 16,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -227,16 +245,18 @@ class _WalletBalanceCard extends StatelessWidget {
           const Text(
             'Wallet Balance',
             style: TextStyle(
-              color: Colors.white70,
+              color: Colors.white,
               fontSize: 16,
+              fontWeight: FontWeight.w500,
             ),
           ),
           Text(
             '₹${balance.toStringAsFixed(2)}',
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 32,
+              fontSize: 36,
               fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
             ),
           ),
         ],
@@ -249,14 +269,12 @@ class _ActionCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final Color color;
   final VoidCallback onTap;
 
   const _ActionCard({
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.color,
     required this.onTap,
   });
 
@@ -264,17 +282,22 @@ class _ActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 2,
+      shadowColor: Colors.grey.withOpacity(0.1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              Icon(
-                icon,
-                size: 32,
-                color: color,
+              ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [Color(0xFFdb9822), Color(0xFFffb32c)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(bounds),
+                child: Icon(icon, size: 32, color: Colors.white),
               ),
               const SizedBox(height: 12),
               Text(
@@ -287,10 +310,7 @@ class _ActionCard extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
             ],
           ),
@@ -308,7 +328,7 @@ class _TransactionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final type = transaction['transactionType'] as String? ?? '';
-    final amount = transaction['amount'] as double? ?? 0.0;
+    final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
     final description = transaction['description'] as String? ?? '';
     final category = transaction['category'] as String? ?? '';
     final createdAt = transaction['createdAt'] as String? ?? '';
@@ -353,10 +373,7 @@ class _TransactionCard extends StatelessWidget {
             ),
             Text(
               _formatStatus(status),
-              style: TextStyle(
-                fontSize: 12,
-                color: _getStatusColor(status),
-              ),
+              style: TextStyle(fontSize: 12, color: _getStatusColor(status)),
             ),
           ],
         ),

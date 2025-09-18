@@ -32,10 +32,16 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
   }
 
   Future<void> _loadSeatData() async {
-    final contestProvider = Provider.of<ContestProvider>(context, listen: false);
-    
+    final contestProvider = Provider.of<ContestProvider>(
+      context,
+      listen: false,
+    );
+
     if (widget.categoryId != null) {
-      await contestProvider.loadCategorySeats(widget.contestId, widget.categoryId!);
+      await contestProvider.loadCategorySeats(
+        widget.contestId,
+        widget.categoryId!,
+      );
     } else {
       // Load all categories if no specific category
       await contestProvider.loadContestCategories(widget.contestId);
@@ -50,6 +56,15 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
         _selectedSeats.add(seatNumber);
       }
     });
+  }
+
+  double _getFontSize(int seatNumber) {
+    final digitCount = seatNumber.toString().length;
+    if (digitCount <= 2) return 14;
+    if (digitCount == 3) return 12;
+    if (digitCount == 4) return 10;
+    if (digitCount == 5) return 8;
+    return 7; // For 6+ digits
   }
 
   Future<void> _purchaseSeats() async {
@@ -67,7 +82,10 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
       _isLoading = true;
     });
 
-    final contestProvider = Provider.of<ContestProvider>(context, listen: false);
+    final contestProvider = Provider.of<ContestProvider>(
+      context,
+      listen: false,
+    );
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
 
     // Check wallet balance
@@ -78,7 +96,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
       setState(() {
         _isLoading = false;
       });
-      
+
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -122,15 +140,15 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      
+
       // Refresh wallet balance
       await walletProvider.loadWalletBalance();
-      
+
       // Clear selected seats
       setState(() {
         _selectedSeats.clear();
       });
-      
+
       // Refresh seat data
       await _loadSeatData();
     } else {
@@ -147,16 +165,30 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.contestName),
-        backgroundColor: const Color(0xFF6A1B9A),
+        title: Text(
+          widget.contestName,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFdb9822), Color(0xFFffb32c)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: Consumer<ContestProvider>(
         builder: (context, contestProvider, child) {
           if (contestProvider.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (contestProvider.error != null) {
@@ -164,11 +196,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red,
-                  ),
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
                   Text(
                     'Error: ${contestProvider.error}',
@@ -187,9 +215,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
 
           final seatData = contestProvider.categorySeats;
           if (seatData == null) {
-            return const Center(
-              child: Text('No seat data available'),
-            );
+            return const Center(child: Text('No seat data available'));
           }
 
           final seatStatus = seatData['seatStatus'] as List<dynamic>? ?? [];
@@ -203,7 +229,13 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
               // Header Info
               Container(
                 padding: const EdgeInsets.all(16),
-                color: const Color(0xFF6A1B9A),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFdb9822), Color(0xFFffb32c)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                ),
                 child: Column(
                   children: [
                     Text(
@@ -241,7 +273,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
                   ],
                 ),
               ),
-              
+
               // Selected Seats Info
               if (_selectedSeats.isNotEmpty)
                 Container(
@@ -268,18 +300,19 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
                     ],
                   ),
                 ),
-              
+
               // Seat Grid
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 10,
-                      childAspectRatio: 1,
-                      crossAxisSpacing: 4,
-                      mainAxisSpacing: 4,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 8,
+                          childAspectRatio: 1.2,
+                          crossAxisSpacing: 6,
+                          mainAxisSpacing: 6,
+                        ),
                     itemCount: seatStatus.length,
                     itemBuilder: (context, index) {
                       final seat = seatStatus[index];
@@ -288,35 +321,43 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
                       final isSelected = _selectedSeats.contains(seatNumber);
 
                       return GestureDetector(
-                        onTap: isPurchased ? null : () => _toggleSeat(seatNumber),
+                        onTap: isPurchased
+                            ? null
+                            : () => _toggleSeat(seatNumber),
                         child: Container(
                           decoration: BoxDecoration(
                             color: isPurchased
                                 ? Colors.grey[400]
                                 : isSelected
-                                    ? const Color(0xFF6A1B9A)
-                                    : Colors.green[100],
+                                ? const Color(0xFFdb9822)
+                                : Colors.green[100],
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(
                               color: isPurchased
                                   ? Colors.grey[600]!
                                   : isSelected
-                                      ? const Color(0xFF6A1B9A)
-                                      : Colors.green,
+                                  ? const Color(0xFFdb9822)
+                                  : Colors.green,
                               width: 1,
                             ),
                           ),
                           child: Center(
-                            child: Text(
-                              seatNumber.toString(),
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: isPurchased
-                                    ? Colors.grey[600]
-                                    : isSelected
-                                        ? Colors.white
-                                        : Colors.green[800],
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                seatNumber.toString(),
+                                style: TextStyle(
+                                  fontSize: _getFontSize(seatNumber),
+                                  fontWeight: FontWeight.bold,
+                                  color: isPurchased
+                                      ? Colors.grey[600]
+                                      : isSelected
+                                      ? Colors.white
+                                      : Colors.green[800],
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ),
@@ -326,29 +367,61 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
                   ),
                 ),
               ),
-              
+
               // Purchase Button
               Container(
                 padding: const EdgeInsets.all(16),
                 child: SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isLoading || _selectedSeats.isEmpty ? null : _purchaseSeats,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: const Color(0xFF6A1B9A),
-                    ),
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : Text(
-                            _selectedSeats.isEmpty
-                                ? 'Select Seats to Purchase'
-                                : 'Purchase ${_selectedSeats.length} Seats - ₹${(_selectedSeats.length * widget.ticketPrice).toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: _isLoading || _selectedSeats.isEmpty
+                          ? null
+                          : const LinearGradient(
+                              colors: [Color(0xFFdb9822), Color(0xFFffb32c)],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
                             ),
-                          ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: _isLoading || _selectedSeats.isEmpty
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: const Color(0xFFdb9822).withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                    ),
+                    child: ElevatedButton(
+                      onPressed: _isLoading || _selectedSeats.isEmpty
+                          ? null
+                          : _purchaseSeats,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: _isLoading || _selectedSeats.isEmpty
+                            ? Colors.grey[400]
+                            : Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : Text(
+                              _selectedSeats.isEmpty
+                                  ? 'Select Seats to Purchase'
+                                  : 'Purchase ${_selectedSeats.length} Seats - ₹${(_selectedSeats.length * widget.ticketPrice).toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: _isLoading || _selectedSeats.isEmpty
+                                    ? Colors.grey[600]
+                                    : Colors.white,
+                              ),
+                            ),
+                    ),
                   ),
                 ),
               ),
@@ -389,10 +462,7 @@ class _InfoChip extends StatelessWidget {
         ),
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 12,
-          ),
+          style: const TextStyle(color: Colors.white70, fontSize: 12),
         ),
       ],
     );

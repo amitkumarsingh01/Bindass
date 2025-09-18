@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ContestProvider with ChangeNotifier {
   ApiService? _apiService;
@@ -13,6 +12,7 @@ class ContestProvider with ChangeNotifier {
   Map<String, dynamic>? _contestWinners;
   Map<String, dynamic>? _myPurchases;
   Map<String, dynamic>? _categorySeats;
+  Map<String, dynamic>? _prizeStructure;
   String? _error;
 
   ContestProvider();
@@ -29,6 +29,7 @@ class ContestProvider with ChangeNotifier {
   Map<String, dynamic>? get contestWinners => _contestWinners;
   Map<String, dynamic>? get myPurchases => _myPurchases;
   Map<String, dynamic>? get categorySeats => _categorySeats;
+  Map<String, dynamic>? get prizeStructure => _prizeStructure;
   String? get error => _error;
 
   Future<void> loadContests() async {
@@ -146,6 +147,22 @@ class ContestProvider with ChangeNotifier {
     }
   }
 
+  Future<void> loadPrizeStructure(String contestId) async {
+    if (_apiService == null) return;
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      _prizeStructure = await _apiService!.getPrizeStructure(contestId);
+      notifyListeners();
+    } catch (e) {
+      _setError(e.toString());
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   Future<bool> purchaseSeats(
     String contestId,
     List<int> seatNumbers,
@@ -193,6 +210,7 @@ class ContestProvider with ChangeNotifier {
     _contestWinners = null;
     _myPurchases = null;
     _categorySeats = null;
+    _prizeStructure = null;
     notifyListeners();
   }
 }

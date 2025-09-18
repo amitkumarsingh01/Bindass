@@ -6,7 +6,8 @@ class TransactionHistoryScreen extends StatefulWidget {
   const TransactionHistoryScreen({super.key});
 
   @override
-  State<TransactionHistoryScreen> createState() => _TransactionHistoryScreenState();
+  State<TransactionHistoryScreen> createState() =>
+      _TransactionHistoryScreenState();
 }
 
 class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
@@ -20,90 +21,160 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Transaction History'),
-        backgroundColor: const Color(0xFF6A1B9A),
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              Provider.of<WalletProvider>(context, listen: false).loadTransactions();
-            },
-          ),
-        ],
+    return Theme(
+      data: Theme.of(context).copyWith(
+        primaryColor: const Color(0xFFdb9822),
+        colorScheme: Theme.of(context).colorScheme.copyWith(
+          primary: const Color(0xFFdb9822),
+          secondary: const Color(0xFFffb32c),
+        ),
+        textTheme: Theme.of(context).textTheme.copyWith(
+          bodyLarge: const TextStyle(color: Colors.black87),
+          bodyMedium: const TextStyle(color: Colors.black87),
+          bodySmall: const TextStyle(color: Colors.black87),
+        ),
       ),
-      body: Consumer<WalletProvider>(
-        builder: (context, walletProvider, child) {
-          if (walletProvider.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-
-          if (walletProvider.error != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error: ${walletProvider.error}',
-                    style: const TextStyle(fontSize: 16),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      walletProvider.loadTransactions();
-                    },
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          if (walletProvider.transactions.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.receipt_long,
-                    size: 64,
-                    color: Colors.grey,
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'No transactions found',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              await walletProvider.loadTransactions();
-            },
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: walletProvider.transactions.length,
-              itemBuilder: (context, index) {
-                final transaction = walletProvider.transactions[index];
-                return _TransactionCard(transaction: transaction);
-              },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'Transaction History',
+            style: TextStyle(
+              color: Colors.black87,
+              fontWeight: FontWeight.w600,
+              fontSize: 20,
             ),
-          );
-        },
+          ),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black87,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          actions: [
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFdb9822).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                  color: Color(0xFFdb9822),
+                  size: 22,
+                ),
+                onPressed: () {
+                  Provider.of<WalletProvider>(
+                    context,
+                    listen: false,
+                  ).loadTransactions();
+                },
+              ),
+            ),
+          ],
+        ),
+        body: Consumer<WalletProvider>(
+          builder: (context, walletProvider, child) {
+            if (walletProvider.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (walletProvider.error != null) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error: ${walletProvider.error}',
+                      style: const TextStyle(fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFdb9822), Color(0xFFffb32c)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          walletProvider.loadTransactions();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Retry',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            if (walletProvider.transactions.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [Color(0xFFdb9822), Color(0xFFffb32c)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ).createShader(bounds),
+                      child: const Icon(
+                        Icons.receipt_long_rounded,
+                        size: 64,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'No transactions found',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Color(0xFFdb9822),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return RefreshIndicator(
+              onRefresh: () async {
+                await walletProvider.loadTransactions();
+              },
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: walletProvider.transactions.length,
+                itemBuilder: (context, index) {
+                  final transaction = walletProvider.transactions[index];
+                  return _TransactionCard(transaction: transaction);
+                },
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -117,36 +188,70 @@ class _TransactionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final type = transaction['transactionType'] as String? ?? '';
-    final amount = transaction['amount'] as double? ?? 0.0;
+    final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
     final description = transaction['description'] as String? ?? '';
     final category = transaction['category'] as String? ?? '';
     final createdAt = transaction['createdAt'] as String? ?? '';
     final status = transaction['status'] as String? ?? '';
-    final balanceAfter = transaction['balanceAfter'] as double? ?? 0.0;
+    final balanceAfter =
+        (transaction['balanceAfter'] as num?)?.toDouble() ?? 0.0;
 
     final isCredit = type.toLowerCase() == 'credit';
-    final amountColor = isCredit ? Colors.green : Colors.red;
     final amountPrefix = isCredit ? '+' : '-';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shadowColor: Colors.grey.withOpacity(0.1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ExpansionTile(
-        leading: CircleAvatar(
-          backgroundColor: amountColor.withOpacity(0.1),
-          child: Icon(
-            _getCategoryIcon(category),
-            color: amountColor,
+        leading: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFFdb9822).withOpacity(0.1),
+                const Color(0xFFffb32c).withOpacity(0.1),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: CircleAvatar(
+            backgroundColor: Colors.transparent,
+            child: ShaderMask(
+              shaderCallback: (bounds) => LinearGradient(
+                colors: isCredit
+                    ? [Colors.green, Colors.green.shade600]
+                    : [const Color(0xFFdb9822), const Color(0xFFffb32c)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ).createShader(bounds),
+              child: Icon(_getCategoryIcon(category), color: Colors.white),
+            ),
           ),
         ),
         title: Text(
           description,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(_formatCategory(category)),
-            Text(_formatDate(createdAt)),
+            Text(
+              _formatCategory(category),
+              style: const TextStyle(
+                color: Color(0xFFdb9822),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(
+              _formatDate(createdAt),
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            ),
           ],
         ),
         trailing: Column(
@@ -157,16 +262,13 @@ class _TransactionCard extends StatelessWidget {
               '$amountPrefix₹${amount.toStringAsFixed(2)}',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: amountColor,
+                color: isCredit ? Colors.green : const Color(0xFFdb9822),
                 fontSize: 16,
               ),
             ),
             Text(
               _formatStatus(status),
-              style: TextStyle(
-                fontSize: 12,
-                color: _getStatusColor(status),
-              ),
+              style: TextStyle(fontSize: 12, color: _getStatusColor(status)),
             ),
           ],
         ),
@@ -175,14 +277,25 @@ class _TransactionCard extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                const Divider(),
+                Divider(color: Colors.grey[300], thickness: 1),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Transaction ID:'),
+                    const Text(
+                      'Transaction ID:',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                     Text(
-                      transaction['transactionId'] ?? 'N/A',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      transaction['transactionId'] ??
+                          transaction['id'] ??
+                          'N/A',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
                   ],
                 ),
@@ -190,10 +303,39 @@ class _TransactionCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Balance After:'),
+                    const Text(
+                      'Balance Before:',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      '₹${((transaction['balanceBefore'] as num?)?.toDouble() ?? 0.0).toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Balance After:',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                     Text(
                       '₹${balanceAfter.toStringAsFixed(2)}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFdb9822),
+                      ),
                     ),
                   ],
                 ),
@@ -202,10 +344,19 @@ class _TransactionCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Reference ID:'),
+                      const Text(
+                        'Reference ID:',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                       Text(
                         transaction['referenceId'],
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
                       ),
                     ],
                   ),

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,10 +14,7 @@ class ApiService {
   // Headers: userId based access
   Map<String, String> get _headers {
     final userId = _prefs.getString('user_id') ?? 'guest';
-    return {
-      'Content-Type': 'application/json',
-      'X-User-Id': userId,
-    };
+    return {'Content-Type': 'application/json', 'X-User-Id': userId};
   }
 
   // Auth endpoints
@@ -25,7 +23,7 @@ class ApiService {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/login'),
       headers: _headers,
-      body: jsonEncode({ 'identifier': identifier, 'password': password }),
+      body: jsonEncode({'identifier': identifier, 'password': password}),
     );
     if (response.statusCode == 200) {
       // Persist identity locally for header-based endpoints
@@ -156,8 +154,27 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> getPrizeStructure(String contestId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/admin/contests/$contestId/prize-structure'),
+      headers: {
+        'Content-Type': 'application/json',
+        'accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to get prize structure: ${response.body}');
+    }
+  }
+
   // Seat endpoints
-  Future<Map<String, dynamic>> getCategorySeats(String contestId, int categoryId) async {
+  Future<Map<String, dynamic>> getCategorySeats(
+    String contestId,
+    int categoryId,
+  ) async {
     final response = await http.get(
       Uri.parse('$baseUrl/seats/$contestId/category/$categoryId'),
       headers: _headers,
@@ -170,7 +187,11 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> purchaseSeats(String contestId, List<int> seatNumbers, String paymentMethod) async {
+  Future<Map<String, dynamic>> purchaseSeats(
+    String contestId,
+    List<int> seatNumbers,
+    String paymentMethod,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/seats/purchase'),
       headers: _headers,
@@ -189,7 +210,9 @@ class ApiService {
   }
 
   // User endpoints
-  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> profileData) async {
+  Future<Map<String, dynamic>> updateProfile(
+    Map<String, dynamic> profileData,
+  ) async {
     final response = await http.put(
       Uri.parse('$baseUrl/users/profile'),
       headers: _headers,
@@ -203,7 +226,9 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> addBankDetails(Map<String, dynamic> bankData) async {
+  Future<Map<String, dynamic>> addBankDetails(
+    Map<String, dynamic> bankData,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/users/bank-details'),
       headers: _headers,
@@ -258,14 +283,32 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> addMoneyToWallet(double amount, String description, String password) async {
+  Future<Map<String, dynamic>> getPayments() async {
+    final userId = _prefs.getString('user_id') ?? 'guest';
+    final response = await http.get(
+      Uri.parse('$baseUrl/admin/payments?userId=$userId'),
+      headers: {
+        'Content-Type': 'application/json',
+        'accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to get payments: ${response.body}');
+    }
+  }
+
+  Future<Map<String, dynamic>> addMoneyToWallet(
+    double amount,
+    String description,
+    String password,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/wallet/add-money'),
-      headers: {
-        ..._headers,
-        'X-User-Password': password,
-      },
-      body: jsonEncode({ 'amount': amount, 'description': description }),
+      headers: {..._headers, 'X-User-Password': password},
+      body: jsonEncode({'amount': amount, 'description': description}),
     );
 
     if (response.statusCode == 200) {
@@ -275,17 +318,131 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> requestWithdrawal(double amount, String bankDetailsId, String withdrawalMethod) async {
+  Future<Map<String, dynamic>> requestWithdrawal(
+    double amount,
+    String bankDetailsId,
+    String withdrawalMethod,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/wallet/withdraw'),
       headers: _headers,
-      body: jsonEncode({ 'amount': amount, 'bank_details_id': bankDetailsId, 'withdrawal_method': withdrawalMethod }),
+      body: jsonEncode({
+        'amount': amount,
+        'bank_details_id': bankDetailsId,
+        'withdrawal_method': withdrawalMethod,
+      }),
     );
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
       throw Exception('Failed to request withdrawal: ${response.body}');
+    }
+  }
+
+  // Home sliders endpoint
+  Future<Map<String, dynamic>> getHomeSliders() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/admin/home-sliders'),
+      headers: {
+        'Content-Type': 'application/json',
+        'accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to get home sliders: ${response.body}');
+    }
+  }
+
+  // Profile picture endpoints
+  Future<Map<String, dynamic>> uploadProfilePicture(File imageFile) async {
+    final userId = _prefs.getString('user_id') ?? 'guest';
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/admin/users/$userId/profile-picture'),
+    );
+
+    request.headers.addAll({'accept': 'application/json'});
+
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'image',
+        imageFile.path,
+        filename: imageFile.path.split('/').last,
+      ),
+    );
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      // Store the profile picture URL in shared preferences
+      await _prefs.setString('profile_picture_url', data['imageUrl']);
+      return data;
+    } else {
+      throw Exception('Failed to upload profile picture: ${response.body}');
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteProfilePicture() async {
+    final userId = _prefs.getString('user_id') ?? 'guest';
+    final response = await http.delete(
+      Uri.parse('$baseUrl/admin/users/$userId/profile-picture'),
+      headers: {'accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      // Remove the profile picture URL from shared preferences
+      await _prefs.remove('profile_picture_url');
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to delete profile picture: ${response.body}');
+    }
+  }
+
+  String? getProfilePictureUrl() {
+    return _prefs.getString('profile_picture_url');
+  }
+
+  // Purchases endpoints
+  Future<Map<String, dynamic>> getUserPurchases({
+    int limit = 100,
+    int skip = 0,
+  }) async {
+    final userId = _prefs.getString('user_id') ?? 'guest';
+    final encodedUserId = Uri.encodeComponent(userId);
+    final response = await http.get(
+      Uri.parse(
+        '$baseUrl/admin/users/$encodedUserId/purchases?limit=$limit&skip=$skip',
+      ),
+      headers: {'accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to get user purchases: ${response.body}');
+    }
+  }
+
+  // Contact endpoints
+  Future<Map<String, dynamic>> getContactInfo() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/admin/contact'),
+      headers: {
+        'Content-Type': 'application/json',
+        'accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to get contact info: ${response.body}');
     }
   }
 

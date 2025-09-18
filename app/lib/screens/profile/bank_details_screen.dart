@@ -32,7 +32,7 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
   Future<void> _loadBankDetails() async {
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
     await walletProvider.loadBankDetails();
-    
+
     if (walletProvider.bankDetails != null) {
       _initializeFields(walletProvider.bankDetails!);
     }
@@ -68,8 +68,11 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
 
   Future<void> _saveBankDetails() async {
     if (_formKey.currentState!.validate()) {
-      final walletProvider = Provider.of<WalletProvider>(context, listen: false);
-      
+      final walletProvider = Provider.of<WalletProvider>(
+        context,
+        listen: false,
+      );
+
       final bankData = {
         'accountNumber': _accountNumberController.text.trim(),
         'ifscCode': _ifscCodeController.text.trim().toUpperCase(),
@@ -95,7 +98,9 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(walletProvider.error ?? 'Failed to save bank details'),
+            content: Text(
+              walletProvider.error ?? 'Failed to save bank details',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -107,23 +112,41 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bank Details'),
-        backgroundColor: const Color(0xFF6A1B9A),
-        foregroundColor: Colors.white,
+        title: const Text(
+          'Bank Details',
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         actions: [
           Consumer<WalletProvider>(
             builder: (context, walletProvider, child) {
               if (walletProvider.bankDetails == null) {
                 return const SizedBox.shrink();
               }
-              
+
               return TextButton(
                 onPressed: walletProvider.isLoading ? null : _toggleEdit,
-                child: Text(
-                  _isEditing ? 'Cancel' : 'Edit',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                child: ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [Color(0xFFdb9822), Color(0xFFffb32c)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ).createShader(bounds),
+                  child: Text(
+                    _isEditing ? 'Cancel' : 'Edit',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
               );
@@ -134,9 +157,7 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
       body: Consumer<WalletProvider>(
         builder: (context, walletProvider, child) {
           if (walletProvider.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (walletProvider.bankDetails == null && !_isEditing) {
@@ -153,19 +174,29 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
                   // Header
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(28),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF6A1B9A), Color(0xFF8E24AA)],
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFFdb9822).withOpacity(0.8),
+                          const Color(0xFFffb32c).withOpacity(0.9),
+                        ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFdb9822).withOpacity(0.15),
+                          blurRadius: 15,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
                     ),
                     child: Column(
                       children: [
                         const Icon(
-                          Icons.account_balance,
+                          Icons.account_balance_rounded,
                           size: 48,
                           color: Colors.white,
                         ),
@@ -173,87 +204,124 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
                         Text(
                           _isEditing ? 'Edit Bank Details' : 'Bank Details',
                           style: const TextStyle(
-                            fontSize: 20,
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
+                            letterSpacing: 0.5,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          _isEditing 
+                          _isEditing
                               ? 'Update your bank account information'
                               : 'Your bank account information for withdrawals',
                           style: const TextStyle(
                             fontSize: 14,
-                            color: Colors.white70,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
                           ),
                           textAlign: TextAlign.center,
                         ),
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Bank Details Form
                   if (_isEditing) ...[
                     _buildFormFields(),
                     const SizedBox(height: 32),
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: walletProvider.isLoading ? null : _saveBankDetails,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: const Color(0xFF6A1B9A),
+                      child: Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFdb9822), Color(0xFFffb32c)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFdb9822).withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        child: walletProvider.isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text(
-                                'Save Bank Details',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                        child: ElevatedButton(
+                          onPressed: walletProvider.isLoading
+                              ? null
+                              : _saveBankDetails,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: walletProvider.isLoading
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
+                              : const Text(
+                                  'Save Bank Details',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
+                        ),
                       ),
                     ),
                   ] else ...[
                     _buildBankDetailsDisplay(walletProvider.bankDetails!),
                   ],
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Info Card
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.orange[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.orange[200]!),
+                      color: const Color(0xFFdb9822).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFFdb9822).withOpacity(0.3),
+                        width: 1,
+                      ),
                     ),
                     child: const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.info, color: Colors.orange, size: 20),
+                            Icon(
+                              Icons.info_rounded,
+                              color: Color(0xFFdb9822),
+                              size: 20,
+                            ),
                             SizedBox(width: 8),
                             Text(
                               'Important',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: Colors.orange,
+                                color: Color(0xFFdb9822),
+                                fontSize: 16,
                               ),
                             ),
                           ],
                         ),
-                        SizedBox(height: 8),
+                        SizedBox(height: 12),
                         Text(
                           '• Bank details are required for withdrawals\n• Ensure all information is accurate\n• Withdrawals will be processed to this account\n• Contact support if you need to change bank details',
                           style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.orange,
+                            fontSize: 14,
+                            color: Color(0xFFdb9822),
+                            height: 1.4,
                           ),
                         ),
                       ],
@@ -275,11 +343,7 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.account_balance,
-              size: 80,
-              color: Colors.grey,
-            ),
+            const Icon(Icons.account_balance, size: 80, color: Colors.grey),
             const SizedBox(height: 24),
             const Text(
               'No Bank Details',
@@ -292,23 +356,52 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
             const SizedBox(height: 12),
             const Text(
               'Add your bank details to enable withdrawals',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _isEditing = true;
-                });
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Add Bank Details'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFdb9822), Color(0xFFffb32c)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFdb9822).withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _isEditing = true;
+                  });
+                },
+                icon: const Icon(Icons.add_rounded, color: Colors.white),
+                label: const Text(
+                  'Add Bank Details',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 16,
+                  ),
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
             ),
           ],
@@ -324,26 +417,37 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
         const Text(
           'Bank Information',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF6A1B9A),
+            color: Color(0xFFdb9822),
+            letterSpacing: 0.5,
           ),
         ),
         const SizedBox(height: 16),
-        
+
         // Bank Name
         TextFormField(
           controller: _bankNameController,
           decoration: InputDecoration(
             labelText: 'Bank Name',
-            prefixIcon: const Icon(Icons.account_balance),
+            prefixIcon: const Icon(
+              Icons.account_balance_rounded,
+              color: Color(0xFFdb9822),
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF6A1B9A)),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFdb9822), width: 2),
             ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            filled: true,
+            fillColor: Colors.grey[50],
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -353,21 +457,31 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
           },
         ),
         const SizedBox(height: 16),
-        
+
         // Account Number
         TextFormField(
           controller: _accountNumberController,
           keyboardType: TextInputType.number,
           decoration: InputDecoration(
             labelText: 'Account Number',
-            prefixIcon: const Icon(Icons.credit_card),
+            prefixIcon: const Icon(
+              Icons.credit_card_rounded,
+              color: Color(0xFFdb9822),
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF6A1B9A)),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFdb9822), width: 2),
             ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            filled: true,
+            fillColor: Colors.grey[50],
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -380,21 +494,31 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
           },
         ),
         const SizedBox(height: 16),
-        
+
         // IFSC Code
         TextFormField(
           controller: _ifscCodeController,
           textCapitalization: TextCapitalization.characters,
           decoration: InputDecoration(
             labelText: 'IFSC Code',
-            prefixIcon: const Icon(Icons.code),
+            prefixIcon: const Icon(
+              Icons.code_rounded,
+              color: Color(0xFFdb9822),
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF6A1B9A)),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFdb9822), width: 2),
             ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            filled: true,
+            fillColor: Colors.grey[50],
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -407,20 +531,30 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
           },
         ),
         const SizedBox(height: 16),
-        
+
         // Account Holder Name
         TextFormField(
           controller: _accountHolderNameController,
           decoration: InputDecoration(
             labelText: 'Account Holder Name',
-            prefixIcon: const Icon(Icons.person),
+            prefixIcon: const Icon(
+              Icons.person_rounded,
+              color: Color(0xFFdb9822),
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF6A1B9A)),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFdb9822), width: 2),
             ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            filled: true,
+            fillColor: Colors.grey[50],
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -430,20 +564,30 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
           },
         ),
         const SizedBox(height: 16),
-        
+
         // Place
         TextFormField(
           controller: _placeController,
           decoration: InputDecoration(
             labelText: 'Place',
-            prefixIcon: const Icon(Icons.location_on),
+            prefixIcon: const Icon(
+              Icons.location_on_rounded,
+              color: Color(0xFFdb9822),
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF6A1B9A)),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFdb9822), width: 2),
             ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            filled: true,
+            fillColor: Colors.grey[50],
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -453,37 +597,57 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
           },
         ),
         const SizedBox(height: 16),
-        
+
         // UPI ID (Optional)
         TextFormField(
           controller: _upiIdController,
           decoration: InputDecoration(
             labelText: 'UPI ID (Optional)',
-            prefixIcon: const Icon(Icons.payment),
+            prefixIcon: const Icon(
+              Icons.payment_rounded,
+              color: Color(0xFFdb9822),
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF6A1B9A)),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFdb9822), width: 2),
             ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            filled: true,
+            fillColor: Colors.grey[50],
           ),
         ),
         const SizedBox(height: 16),
-        
+
         // Extra Parameter (Optional)
         TextFormField(
           controller: _extraParameterController,
           decoration: InputDecoration(
             labelText: 'Additional Information (Optional)',
-            prefixIcon: const Icon(Icons.info),
+            prefixIcon: const Icon(
+              Icons.info_rounded,
+              color: Color(0xFFdb9822),
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF6A1B9A)),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFdb9822), width: 2),
             ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            filled: true,
+            fillColor: Colors.grey[50],
           ),
         ),
       ],
@@ -499,26 +663,32 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.account_balance, color: Color(0xFF6A1B9A)),
+                const Icon(
+                  Icons.account_balance_rounded,
+                  color: Color(0xFFdb9822),
+                ),
                 const SizedBox(width: 8),
                 const Text(
                   'Bank Details',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF6A1B9A),
+                    color: Color(0xFFdb9822),
                   ),
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: bankDetails['isVerified'] == true 
+                    color: bankDetails['isVerified'] == true
                         ? Colors.green.withOpacity(0.1)
                         : Colors.orange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: bankDetails['isVerified'] == true 
+                      color: bankDetails['isVerified'] == true
                           ? Colors.green
                           : Colors.orange,
                     ),
@@ -526,7 +696,7 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
                   child: Text(
                     bankDetails['isVerified'] == true ? 'Verified' : 'Pending',
                     style: TextStyle(
-                      color: bankDetails['isVerified'] == true 
+                      color: bankDetails['isVerified'] == true
                           ? Colors.green
                           : Colors.orange,
                       fontWeight: FontWeight.bold,
@@ -538,14 +708,24 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
             ),
             const SizedBox(height: 16),
             _buildDetailRow('Bank Name', bankDetails['bankName'] ?? 'N/A'),
-            _buildDetailRow('Account Number', _maskAccountNumber(bankDetails['accountNumber'])),
+            _buildDetailRow(
+              'Account Number',
+              _maskAccountNumber(bankDetails['accountNumber']),
+            ),
             _buildDetailRow('IFSC Code', bankDetails['ifscCode'] ?? 'N/A'),
-            _buildDetailRow('Account Holder', bankDetails['accountHolderName'] ?? 'N/A'),
+            _buildDetailRow(
+              'Account Holder',
+              bankDetails['accountHolderName'] ?? 'N/A',
+            ),
             _buildDetailRow('Place', bankDetails['place'] ?? 'N/A'),
             if (bankDetails['upiId'] != null && bankDetails['upiId'].isNotEmpty)
               _buildDetailRow('UPI ID', bankDetails['upiId']),
-            if (bankDetails['extraParameter1'] != null && bankDetails['extraParameter1'].isNotEmpty)
-              _buildDetailRow('Additional Info', bankDetails['extraParameter1']),
+            if (bankDetails['extraParameter1'] != null &&
+                bankDetails['extraParameter1'].isNotEmpty)
+              _buildDetailRow(
+                'Additional Info',
+                bankDetails['extraParameter1'],
+              ),
           ],
         ),
       ),
@@ -568,12 +748,7 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
               ),
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 16),
-            ),
-          ),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 16))),
         ],
       ),
     );
