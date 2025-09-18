@@ -14,25 +14,31 @@ async def register_user(user: UserCreate):
     """Register a new user"""
     database = get_database()
     
-    # Only enforce uniqueness on email
-    existing_by_email = await database.users.find_one({"email": user.email})
-    if existing_by_email:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists"
-        )
+    # Normalize email
+    normalized_email = (user.email or "").strip().lower()
     
     # Hash password
     hashed_password = get_password_hash(user.password)
     
     # Create user document
     user_dict = user.dict()
+    user_dict["email"] = normalized_email
     user_dict["password"] = hashed_password
     user_dict["walletBalance"] = 0.0
     user_dict["isActive"] = True
     
     # Insert user
-    result = await database.users.insert_one(user_dict)
+    # Insert user (catch duplicate email at DB level)
+    try:
+        result = await database.users.insert_one(user_dict)
+    except Exception as e:
+        # Handle DuplicateKeyError for email unique index
+        if hasattr(e, "details") and isinstance(getattr(e, "code", None), int):
+            pass
+        # Fallback string check
+        if "duplicate key" in str(e).lower() and "email" in str(e).lower():
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User with this email already exists")
+        raise
     
     # Fetch created user
     created_user = await database.users.find_one({"_id": result.inserted_id})
@@ -49,10 +55,8 @@ async def register_user_simple(payload: UserRegisterSimple):
     """Complete registration accepting all user parameters."""
     database = get_database()
 
-    # Only enforce uniqueness on email
-    existing_by_email = await database.users.find_one({"email": payload.email})
-    if existing_by_email:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User with this email already exists")
+    # Normalize email
+    normalized_email = (payload.email or "").strip().lower()
 
     hashed_password = get_password_hash(payload.password)
 
@@ -62,7 +66,7 @@ async def register_user_simple(payload: UserRegisterSimple):
     doc = {
         "userName": payload.userName,
         "userId": payload.userId,
-        "email": payload.email,
+        "email": normalized_email,
         "phoneNumber": payload.phoneNumber,
         "password": hashed_password,
         "profilePicture": payload.profilePicture,
@@ -75,7 +79,13 @@ async def register_user_simple(payload: UserRegisterSimple):
         "updatedAt": now,
     }
 
-    res = await database.users.insert_one(doc)
+    # Insert user (catch duplicate email at DB level)
+    try:
+        res = await database.users.insert_one(doc)
+    except Exception as e:
+        if "duplicate key" in str(e).lower() and "email" in str(e).lower():
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User with this email already exists")
+        raise
     created = await database.users.find_one({"_id": res.inserted_id})
     created["id"] = str(created["_id"])
     del created["_id"]
