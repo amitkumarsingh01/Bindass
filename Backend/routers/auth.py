@@ -56,16 +56,10 @@ async def register_user_simple(payload: UserRegisterSimple):
     """Complete registration accepting all user parameters."""
     database = get_database()
 
-    # Check if user already exists by userId, email, or phoneNumber
-    existing_user = await database.users.find_one({
-        "$or": [
-            {"userId": payload.userId},
-            {"email": payload.email},
-            {"phoneNumber": payload.phoneNumber}
-        ]
-    })
-    if existing_user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists")
+    # Only enforce uniqueness on email
+    existing_by_email = await database.users.find_one({"email": payload.email})
+    if existing_by_email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User with this email already exists")
 
     hashed_password = get_password_hash(payload.password)
 
