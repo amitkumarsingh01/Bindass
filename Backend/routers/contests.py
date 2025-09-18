@@ -302,15 +302,24 @@ async def get_contest_prize_structure(contest_id: str):
             detail="Invalid contest ID"
         )
     
+    # Fetch contest for summary fields
+    contest = await database.contests.find_one({"_id": ObjectId(contest_id)})
     prizes = []
     cursor = database.prize_structure.find({"contestId": ObjectId(contest_id)}).sort("prizeRank", 1)
     
     async for prize in cursor:
+        # Convert any ObjectId fields to strings for JSON serialization
+        for _key, _value in list(prize.items()):
+            if isinstance(_value, ObjectId):
+                prize[_key] = str(_value)
         prize["id"] = str(prize["_id"])
         del prize["_id"]
         prizes.append(prize)
     
     return {
         "contestId": contest_id,
+        "contestName": contest.get("contestName") if contest else None,
+        "totalWinners": contest.get("totalWinners", 0) if contest else 0,
+        "cashbackforhighest": contest.get("cashbackforhighest") if contest else None,
         "prizeStructure": prizes
     }
