@@ -9,6 +9,20 @@ import logging
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+@router.get("/check-user")
+async def check_user(email: str | None = None, userId: str | None = None, phoneNumber: str | None = None):
+    """Quick availability check. Returns which identifiers already exist."""
+    database = get_database()
+    result = {"existsEmail": False, "existsUserId": False, "existsPhone": False}
+    if email:
+        normalized = (email or "").strip().lower()
+        result["existsEmail"] = bool(await database.users.find_one({"email": normalized}, {"_id": 1}))
+    if userId:
+        result["existsUserId"] = bool(await database.users.find_one({"userId": userId}, {"_id": 1}))
+    if phoneNumber:
+        result["existsPhone"] = bool(await database.users.find_one({"phoneNumber": phoneNumber}, {"_id": 1}))
+    return result
+
 @router.post("/register", response_model=UserResponse)
 async def register_user(user: UserCreate):
     """Register a new user"""
