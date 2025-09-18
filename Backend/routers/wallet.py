@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, status, Request
+from fastapi import APIRouter, HTTPException, Depends, status
 from models import User, WalletTransaction, Withdrawal, WithdrawalCreate, TransactionType, TransactionCategory, TransactionStatus, WithdrawalMethod, WithdrawalStatus
 from auth import resolve_user, get_user_with_password
 from database import get_database
@@ -7,11 +7,6 @@ from datetime import datetime
 from typing import List, Optional
 import uuid
 import logging
-from cashfree_pg.api_client import Cashfree
-from cashfree_pg.models.create_order_request import CreateOrderRequest
-from cashfree_pg.models.customer_details import CustomerDetails
-from cashfree_pg.models.order_meta import OrderMeta
-from config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -86,51 +81,7 @@ async def add_money_to_wallet(
     transaction_id = str(uuid.uuid4())
     
     try:
-        # If Cashfree is configured and amount > 0, create a payment order instead of immediate credit
-        if amount > 0 and settings.cashfree_client_id and settings.cashfree_client_secret:
-            env = Cashfree.XSandbox if settings.cashfree_environment.lower() == "sandbox" else Cashfree.XProduction
-            Cashfree.XClientId = settings.cashfree_client_id
-            Cashfree.XClientSecret = settings.cashfree_client_secret
-            Cashfree.XEnvironment = env
-
-            customer = CustomerDetails(
-                customer_id=str(current_user.userId),
-                customer_phone=""  # optional phone
-            )
-            meta = OrderMeta(
-                return_url=f"https://server.bindassgrand.com/api/wallet/cashfree/return?tx={transaction_id}",
-            )
-            order_req = CreateOrderRequest(
-                order_amount=float(amount),
-                order_currency="INR",
-                customer_details=customer,
-                order_id=transaction_id,
-                order_meta=meta,
-            )
-            try:
-                api_resp = Cashfree().PGCreateOrder("2023-08-01", order_req, None, None)
-                # Persist a pending top-up intent to verify on webhook
-                db = database
-                await db.wallet_topups.insert_one({
-                    "userId": current_user.id,
-                    "transactionId": transaction_id,
-                    "amount": amount,
-                    "status": "pending",
-                    "provider": "cashfree",
-                    "createdAt": datetime.now()
-                })
-                return {
-                    "paymentProvider": "cashfree",
-                    "transactionId": transaction_id,
-                    "orderId": api_resp.data["order_id"] if isinstance(api_resp.data, dict) else transaction_id,
-                    "cfOrder": api_resp.data,
-                    "message": "Payment order created. Complete payment to credit wallet."
-                }
-            except Exception as e:
-                logger.error(f"Cashfree order creation failed: {e}")
-                raise HTTPException(status_code=500, detail="Failed to create payment order")
-
-        # Fallback: direct credit (legacy/in-app balance simulation)
+        # Update wallet balance
         new_balance = (current_user.walletBalance or 0) + amount
         await database.users.update_one(
             {"_id": current_user.id},
@@ -165,58 +116,6 @@ async def add_money_to_wallet(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to add money to wallet"
         )
-
-
-@router.post("/cashfree/webhook")
-async def cashfree_webhook(request: Request):
-    """Handle Cashfree payment webhooks to confirm and credit wallet."""
-    database = get_database()
-    try:
-        payload = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON")
-
-    tx_id = payload.get("data", {}).get("order", {}).get("order_id") or payload.get("order_id")
-    order_status = payload.get("data", {}).get("order", {}).get("order_status") or payload.get("order_status")
-    amount = payload.get("data", {}).get("order", {}).get("order_amount") or payload.get("order_amount")
-
-    if not tx_id:
-        raise HTTPException(status_code=400, detail="Missing order_id")
-
-    topup = await database.wallet_topups.find_one({"transactionId": tx_id})
-    if not topup:
-        # Ignore unknown
-        return {"message": "ignored"}
-
-    if order_status and str(order_status).lower() in ("paid", "success", "completed"):
-        user = await database.users.find_one({"_id": topup["userId"]})
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        credited = await database.wallet_transactions.find_one({"transactionId": tx_id})
-        if credited:
-            return {"message": "already processed"}
-
-        new_balance = (user.get("walletBalance") or 0) + float(topup["amount"])
-        await database.users.update_one({"_id": user["_id"]}, {"$set": {"walletBalance": new_balance}})
-        await database.wallet_transactions.insert_one({
-            "userId": user["_id"],
-            "transactionId": tx_id,
-            "transactionType": TransactionType.CREDIT,
-            "amount": float(topup["amount"]),
-            "description": "Wallet top-up via Cashfree",
-            "category": TransactionCategory.DEPOSIT,
-            "balanceBefore": user.get("walletBalance") or 0,
-            "balanceAfter": new_balance,
-            "status": TransactionStatus.COMPLETED,
-            "createdAt": datetime.now()
-        })
-        await database.wallet_topups.update_one({"_id": topup["_id"]}, {"$set": {"status": "completed", "updatedAt": datetime.now()}})
-        return {"message": "wallet credited"}
-
-    # failure or other
-    await database.wallet_topups.update_one({"_id": topup["_id"]}, {"$set": {"status": str(order_status).lower(), "updatedAt": datetime.now()}})
-    return {"message": "status updated"}
 
 @router.post("/withdraw")
 async def request_withdrawal(
