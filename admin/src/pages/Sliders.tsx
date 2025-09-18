@@ -117,6 +117,19 @@ export default function Sliders() {
     }
   }
 
+  const handleDelete = async (sliderId: string) => {
+    if (!confirm('Are you sure you want to delete this slider?')) {
+      return
+    }
+    
+    try {
+      await api.delete(`/admin/home-sliders/${sliderId}`)
+      await load() // Refresh the list after successful deletion
+    } catch (e: any) {
+      alert(e?.response?.data?.detail || 'Failed to delete slider')
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
@@ -310,11 +323,7 @@ export default function Sliders() {
                     {slider.isActive ? 'Deactivate' : 'Activate'}
                   </button>
                   <button 
-                    onClick={() => {
-                      if (confirm('Are you sure you want to delete this slider?')) {
-                        setItems(items.filter(s => s.id !== slider.id))
-                      }
-                    }}
+                    onClick={() => handleDelete(slider.id)}
                     className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
                   >
                     🗑️

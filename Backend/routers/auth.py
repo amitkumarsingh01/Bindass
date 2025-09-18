@@ -53,23 +53,17 @@ async def register_user(user: UserCreate):
 
 @router.post("/register-simple", response_model=UserResponse)
 async def register_user_simple(payload: UserRegisterSimple):
-    """Minimal registration accepting email or phone and password. Generates defaults."""
+    """Complete registration accepting all user parameters."""
     database = get_database()
 
-    if not payload.email and not payload.phoneNumber:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provide email or phoneNumber")
-
-    # Normalize and pick userId
-    base_user_id = (payload.email or payload.phoneNumber).lower()
-
-    # Build OR list only with present fields (avoid empty dict that matches everything)
-    or_list = [{"userId": base_user_id}]
-    if payload.email:
-        or_list.append({"email": payload.email})
-    if payload.phoneNumber:
-        or_list.append({"phoneNumber": payload.phoneNumber})
-
-    existing_user = await database.users.find_one({"$or": or_list})
+    # Check if user already exists by userId, email, or phoneNumber
+    existing_user = await database.users.find_one({
+        "$or": [
+            {"userId": payload.userId},
+            {"email": payload.email},
+            {"phoneNumber": payload.phoneNumber}
+        ]
+    })
     if existing_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists")
 
@@ -79,17 +73,17 @@ async def register_user_simple(payload: UserRegisterSimple):
     now = datetime.now()
 
     doc = {
-        "userName": payload.userName or (payload.email or payload.phoneNumber),
-        "userId": base_user_id,
-        "email": payload.email or f"{base_user_id}@example.com",
-        "phoneNumber": payload.phoneNumber or "",
+        "userName": payload.userName,
+        "userId": payload.userId,
+        "email": payload.email,
+        "phoneNumber": payload.phoneNumber,
         "password": hashed_password,
-        "profilePicture": None,
-        "city": "",
-        "state": "",
+        "profilePicture": payload.profilePicture,
+        "city": payload.city or "",
+        "state": payload.state or "",
         "walletBalance": 0.0,
         "isActive": True,
-        "extraParameter1": None,
+        "extraParameter1": payload.extraParameter1,
         "createdAt": now,
         "updatedAt": now,
     }

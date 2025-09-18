@@ -9,6 +9,15 @@ export default function Contact() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  
+  // How to Play content
+  const [howToPlay, setHowToPlay] = useState({
+    english: '',
+    hindi: '',
+    kannada: ''
+  })
+  const [howToPlayLoading, setHowToPlayLoading] = useState(true)
+  const [activeLanguage, setActiveLanguage] = useState<'english' | 'hindi' | 'kannada'>('english')
 
   const load = async () => {
     setLoading(true)
@@ -25,7 +34,26 @@ export default function Contact() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  const loadHowToPlay = async () => {
+    setHowToPlayLoading(true)
+    try {
+      const res = await api.get('/admin/how-to-play')
+      setHowToPlay({
+        english: res.data.english || '',
+        hindi: res.data.hindi || '',
+        kannada: res.data.kannada || ''
+      })
+    } catch (e: any) {
+      console.error('Failed to load how to play content:', e)
+    } finally {
+      setHowToPlayLoading(false)
+    }
+  }
+
+  useEffect(() => { 
+    load()
+    loadHowToPlay()
+  }, [])
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -59,7 +87,67 @@ export default function Contact() {
         <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
           Contact Information
         </h1>
-        <p className="text-gray-600 mt-1">Manage support contact details displayed to users</p>
+        <p className="text-gray-600 mt-1">Manage support contact details and how to play content displayed to users</p>
+      </div>
+
+      {/* How to Play Preview Section */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-primary to-yellow-500 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <span className="text-2xl text-white">📖</span>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white">How to Play Content</h2>
+                <p className="text-white/80 text-sm">Preview of game instructions shown to users</p>
+              </div>
+            </div>
+            <a 
+              href="/how-to-play"
+              className="px-4 py-2 bg-white/20 text-white rounded-xl hover:bg-white/30 transition-all duration-200 font-medium"
+            >
+              Edit Content
+            </a>
+          </div>
+        </div>
+        
+        <div className="p-6">
+          {/* Language Tabs */}
+          <div className="flex mb-6 border-b border-gray-200">
+            {[
+              { key: 'english', label: 'English', flag: '🇺🇸' },
+              { key: 'hindi', label: 'हिंदी', flag: '🇮🇳' },
+              { key: 'kannada', label: 'ಕನ್ನಡ', flag: '🇮🇳' }
+            ].map((lang) => (
+              <button
+                key={lang.key}
+                onClick={() => setActiveLanguage(lang.key as any)}
+                className={`px-4 py-2 text-sm font-medium transition-all duration-200 border-b-2 ${
+                  activeLanguage === lang.key
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <span className="text-lg mr-2">{lang.flag}</span>
+                {lang.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Content Preview */}
+          {howToPlayLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            <div className="bg-gray-50 rounded-xl p-6 max-h-96 overflow-y-auto">
+              <pre className="whitespace-pre-wrap text-gray-700 text-sm leading-relaxed font-sans">
+                {howToPlay[activeLanguage] || 'No content available for this language...'}
+              </pre>
+            </div>
+          )}
+        </div>
       </div>
 
       {error && (

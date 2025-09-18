@@ -89,6 +89,7 @@ class Contest(BaseModel):
     availableSeats: int = 10000
     purchasedSeats: int = 0
     totalWinners: int
+    cashbackforhighest: Optional[float] = None
     status: ContestStatus = ContestStatus.ACTIVE
     contestStartDate: datetime
     contestEndDate: datetime
@@ -312,11 +313,16 @@ class UserCreate(BaseModel):
     extraParameter1: Optional[str] = None
 
 class UserRegisterSimple(BaseModel):
-    # Minimal registration: either email or phoneNumber is required, plus password
-    email: Optional[EmailStr] = None
-    phoneNumber: Optional[str] = None
+    # Complete registration with all user parameters
+    userName: str
+    userId: str
+    email: EmailStr
+    phoneNumber: str
     password: str
-    userName: Optional[str] = None
+    profilePicture: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    extraParameter1: Optional[str] = None
 
 class UserLogin(BaseModel):
     # Accept any identifier: email, phoneNumber, or userId

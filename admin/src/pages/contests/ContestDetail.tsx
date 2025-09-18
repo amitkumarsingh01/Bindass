@@ -171,6 +171,54 @@ export default function ContestDetail() {
         </div>
       </div>
 
+      {/* Management Actions */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <span className="text-2xl">⚙️</span>
+          Contest Management
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Link
+            to={`/contests/${id}/prize-structure`}
+            className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-xl border border-blue-200 transition-all duration-200 group"
+          >
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white group-hover:scale-110 transition-transform duration-200">
+              <span className="text-xl">🏆</span>
+            </div>
+            <div>
+              <div className="font-semibold text-gray-800">Prize Structure</div>
+              <div className="text-sm text-gray-600">Configure prize levels and winners</div>
+            </div>
+          </Link>
+
+          <Link
+            to={`/contests/${id}/prize-settings`}
+            className="flex items-center gap-3 p-4 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-xl border border-green-200 transition-all duration-200 group"
+          >
+            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white group-hover:scale-110 transition-transform duration-200">
+              <span className="text-xl">⚙️</span>
+            </div>
+            <div>
+              <div className="font-semibold text-gray-800">Prize Settings</div>
+              <div className="text-sm text-gray-600">Edit total winners & cashback</div>
+            </div>
+          </Link>
+
+          <Link
+            to={`/contests/${id}/draw`}
+            className="flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-xl border border-purple-200 transition-all duration-200 group"
+          >
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white group-hover:scale-110 transition-transform duration-200">
+              <span className="text-xl">🎲</span>
+            </div>
+            <div>
+              <div className="font-semibold text-gray-800">Announce Prize</div>
+              <div className="text-sm text-gray-600">Conduct lottery draw</div>
+            </div>
+          </Link>
+        </div>
+      </div>
+
       {/* Tabs */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
         <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">

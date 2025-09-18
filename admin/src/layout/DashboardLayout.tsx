@@ -8,6 +8,7 @@ const nav = [
   { to: '/withdrawals', label: 'Withdrawals', icon: '💰', description: 'Payment Requests' },
   { to: '/sliders', label: 'Home Sliders', icon: '🖼️', description: 'Banner Management' },
   { to: '/contact', label: 'Contact', icon: '☎️', description: 'Support Details' },
+  { to: '/how-to-play', label: 'How to Play', icon: '📖', description: 'Game Instructions' },
 ]
 
 export default function DashboardLayout() {

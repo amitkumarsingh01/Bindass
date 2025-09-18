@@ -103,6 +103,7 @@ async def create_contest(contest: dict):
     now = datetime.now()
     contest_dict.setdefault("contestName", f"Rs {int(contest_dict['ticketPrice'])} Contest")
     contest_dict.setdefault("totalWinners", 0)
+    contest_dict.setdefault("cashbackforhighest", None)
     contest_dict.setdefault("status", "active")
     contest_dict.setdefault("contestStartDate", now)
     contest_dict.setdefault("contestEndDate", now + timedelta(days=7))
@@ -316,6 +317,40 @@ async def update_contact_info(payload: dict):
     )
     return {"message": "Contact info saved"}
 
+@router.get("/how-to-play")
+async def get_how_to_play():
+    """Public: Get how to play content in multiple languages."""
+    db = get_database()
+    doc = await db.settings.find_one({"key": "how_to_play"})
+    if not doc:
+        return {
+            "english": "",
+            "hindi": "",
+            "kannada": ""
+        }
+    data = doc.get("value", {})
+    return {
+        "english": data.get("english", ""),
+        "hindi": data.get("hindi", ""),
+        "kannada": data.get("kannada", "")
+    }
+
+@router.put("/how-to-play")
+async def update_how_to_play(payload: dict):
+    """Public: Update how to play content (no auth)."""
+    db = get_database()
+    value = {
+        "english": payload.get("english", ""),
+        "hindi": payload.get("hindi", ""),
+        "kannada": payload.get("kannada", "")
+    }
+    await db.settings.update_one(
+        {"key": "how_to_play"},
+        {"$set": {"key": "how_to_play", "value": value, "updatedAt": datetime.now()}},
+        upsert=True
+    )
+    return {"message": "How to play content saved"}
+
 @router.get("/payments")
 async def get_payments(userId: Optional[str] = None, limit: int = 100, skip: int = 0):
     """Return wallet transactions. If userId provided, filter by that user.
@@ -340,6 +375,102 @@ async def get_payments(userId: Optional[str] = None, limit: int = 100, skip: int
 
     total = await db.wallet_transactions.count_documents(query)
     return {"total": total, "items": items, "limit": limit, "skip": skip}
+
+@router.get("/users/{user_id}/purchases")
+async def get_user_purchases(user_id: str, limit: int = 100, skip: int = 0):
+    """Get all seat purchases for a specific user by userId (string).
+    
+    Returns contest details, seat info, and purchase history.
+    """
+    db = get_database()
+    
+    # Find user by userId (string)
+    user = await db.users.find_one({"userId": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get all purchases for this user
+    pipeline = [
+        {"$match": {"userId": user["_id"], "status": "purchased"}},
+        {"$sort": {"purchaseDate": -1}},
+        {"$skip": skip},
+        {"$limit": limit},
+        {
+            "$lookup": {
+                "from": "contests",
+                "localField": "contestId",
+                "foreignField": "_id",
+                "as": "contest"
+            }
+        },
+        {"$unwind": {"path": "$contest", "preserveNullAndEmptyArrays": True}},
+        {
+            "$project": {
+                "_id": 0,
+                "purchaseId": {"$toString": "$_id"},
+                "seatNumber": 1,
+                "categoryId": 1,
+                "categoryName": 1,
+                "ticketPrice": 1,
+                "purchaseDate": 1,
+                "contest": {
+                    "id": {"$toString": "$contest._id"},
+                    "contestName": "$contest.contestName",
+                    "totalPrizeMoney": "$contest.totalPrizeMoney",
+                    "status": "$contest.status",
+                    "contestStartDate": "$contest.contestStartDate",
+                    "contestEndDate": "$contest.contestEndDate",
+                    "drawDate": "$contest.drawDate"
+                }
+            }
+        }
+    ]
+    
+    items = await db.purchased_seats.aggregate(pipeline).to_list(length=None)
+    
+    # Get total count
+    total = await db.purchased_seats.count_documents({
+        "userId": user["_id"], 
+        "status": "purchased"
+    })
+    
+    # Get summary stats
+    stats_pipeline = [
+        {"$match": {"userId": user["_id"], "status": "purchased"}},
+        {
+            "$group": {
+                "_id": None,
+                "totalPurchases": {"$sum": 1},
+                "totalSpent": {"$sum": "$ticketPrice"},
+                "contestsParticipated": {"$addToSet": "$contestId"}
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "totalPurchases": 1,
+                "totalSpent": 1,
+                "contestsParticipated": {"$size": "$contestsParticipated"}
+            }
+        }
+    ]
+    
+    stats_result = await db.purchased_seats.aggregate(stats_pipeline).to_list(length=1)
+    stats = stats_result[0] if stats_result else {
+        "totalPurchases": 0,
+        "totalSpent": 0,
+        "contestsParticipated": 0
+    }
+    
+    return {
+        "userId": user_id,
+        "userName": user.get("userName", ""),
+        "total": total,
+        "items": items,
+        "limit": limit,
+        "skip": skip,
+        "stats": stats
+    }
 
 @router.post("/users/{user_id}/profile-picture")
 async def upload_profile_picture(user_id: str, image: UploadFile = File(...)):
@@ -417,6 +548,36 @@ async def get_prizes_summary(contest_id: str):
         "totalPrizeConfigured": total_prize,
         "prizes": prizes
     }
+
+@router.put("/contests/{contest_id}/prize-settings")
+async def update_prize_settings(contest_id: str, payload: dict):
+    """Update totalWinners and cashbackforhighest for a contest.
+    
+    Accepts: { "totalWinners": int, "cashbackforhighest": float }
+    """
+    db = get_database()
+    if not ObjectId.is_valid(contest_id):
+        raise HTTPException(status_code=400, detail="Invalid contest ID")
+    
+    # Check if contest exists
+    contest = await db.contests.find_one({"_id": ObjectId(contest_id)})
+    if not contest:
+        raise HTTPException(status_code=404, detail="Contest not found")
+    
+    update_data = {"updatedAt": datetime.now()}
+    
+    if "totalWinners" in payload:
+        update_data["totalWinners"] = int(payload["totalWinners"])
+    
+    if "cashbackforhighest" in payload:
+        update_data["cashbackforhighest"] = float(payload["cashbackforhighest"]) if payload["cashbackforhighest"] is not None else None
+    
+    await db.contests.update_one(
+        {"_id": ObjectId(contest_id)},
+        {"$set": update_data}
+    )
+    
+    return {"message": "Prize settings updated successfully"}
 
 @router.put("/withdrawals/{withdrawal_id}/status")
 async def update_withdrawal_status(
