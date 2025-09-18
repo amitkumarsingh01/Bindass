@@ -13,12 +13,18 @@ export default function PrizeStructure() {
   ])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  
+  // Contest settings
+  const [totalWinners, setTotalWinners] = useState(0)
+  const [cashbackforhighest, setCashbackforhighest] = useState<number | null>(null)
+  const [contest, setContest] = useState<any>(null)
 
-  // Load existing prize structure on mount
+  // Load existing prize structure and contest details on mount
   useEffect(() => {
     (async () => {
       if (!id) return
       try {
+        // Load prize structure
         const res = await api.get(`/admin/contests/${id}/prize-structure`)
         const items = (res.data?.items || []) as any[]
         if (items.length > 0) {
@@ -30,6 +36,12 @@ export default function PrizeStructure() {
             winnersSeatNumbers: Array.isArray(it.winnersSeatNumbers) ? it.winnersSeatNumbers.join(',') : (it.winnersSeatNumbers || '')
           })))
         }
+        
+        // Load contest details
+        const contestRes = await api.get(`/contests/${id}`)
+        setContest(contestRes.data)
+        setTotalWinners(contestRes.data.totalWinners || 0)
+        setCashbackforhighest(contestRes.data.cashbackforhighest || null)
       } catch (e) {
         // ignore load errors; start with defaults
       }
@@ -42,7 +54,7 @@ export default function PrizeStructure() {
     setError('')
     setLoading(true)
     try {
-      // Convert CSV seat numbers string -> number[]
+      // Save prize structure
       const payload = rows.map(r => ({
         prizeRank: r.prizeRank,
         prizeAmount: r.prizeAmount,
@@ -51,9 +63,16 @@ export default function PrizeStructure() {
         winnersSeatNumbers: r.winnersSeatNumbers ? r.winnersSeatNumbers.split(',').map(s=>Number(s.trim())).filter(n=>!Number.isNaN(n)) : undefined,
       }))
       await api.post(`/admin/contests/${id}/prize-structure`, payload)
+      
+      // Save contest settings
+      await api.put(`/admin/contests/${id}/prize-settings`, {
+        totalWinners,
+        cashbackforhighest
+      })
+      
       nav('/contests', { replace: true })
     } catch (e: any) {
-      setError(e?.response?.data?.detail || 'Failed to add prize structure')
+      setError(e?.response?.data?.detail || 'Failed to save prize structure')
     } finally {
       setLoading(false)
     }
@@ -92,6 +111,62 @@ export default function PrizeStructure() {
             Prize Structure
           </h1>
           <p className="text-gray-600 mt-1">Define prizes and winners for contest #{id}</p>
+        </div>
+      </div>
+
+      {/* Contest Settings */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+            <span className="text-3xl">⚙️</span>
+            Contest Settings
+          </h2>
+          <p className="text-gray-600">Configure total winners and cashback settings</p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-lg font-semibold text-gray-800 mb-3">
+              Total Winners
+            </label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl">🏆</span>
+              <input
+                type="number"
+                className="w-full border border-gray-200 rounded-xl pl-12 pr-4 py-4 focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-lg"
+                value={totalWinners}
+                onChange={(e) => setTotalWinners(parseInt(e.target.value) || 0)}
+                min="0"
+                placeholder="Enter total number of winners"
+              />
+            </div>
+            <p className="text-sm text-gray-500 mt-2 flex items-center gap-1">
+              <span>💡</span>
+              <span>Total number of winners for this contest</span>
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-lg font-semibold text-gray-800 mb-3">
+              Cashback for Highest Prize
+            </label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl">💰</span>
+              <input
+                type="number"
+                step="0.01"
+                className="w-full border border-gray-200 rounded-xl pl-12 pr-4 py-4 focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-lg"
+                value={cashbackforhighest || ''}
+                onChange={(e) => setCashbackforhighest(e.target.value ? parseFloat(e.target.value) : null)}
+                min="0"
+                placeholder="Enter cashback amount"
+              />
+            </div>
+            <p className="text-sm text-gray-500 mt-2 flex items-center gap-1">
+              <span>💡</span>
+              <span>Additional cashback for the highest prize winner (optional)</span>
+            </p>
+          </div>
         </div>
       </div>
 

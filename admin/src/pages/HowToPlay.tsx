@@ -149,23 +149,6 @@ export default function HowToPlay() {
           </form>
         </div>
       </div>
-
-      {/* Preview Section */}
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-        <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 border-b border-gray-200">
-          <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-            <span className="text-2xl">👁️</span>
-            Preview - {activeTab === 'english' ? 'English' : activeTab === 'hindi' ? 'Hindi' : 'Kannada'}
-          </h3>
-        </div>
-        <div className="p-6">
-          <div className="prose max-w-none">
-            <pre className="whitespace-pre-wrap text-gray-700 text-sm leading-relaxed font-sans">
-              {getCurrentContent() || 'No content available for preview...'}
-            </pre>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
