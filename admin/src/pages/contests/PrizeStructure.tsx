@@ -17,7 +17,7 @@ export default function PrizeStructure() {
   // Contest settings
   const [totalWinners, setTotalWinners] = useState(0)
   const [cashbackforhighest, setCashbackforhighest] = useState<number | null>(null)
-  const [contest, setContest] = useState<any>(null)
+  const [, setContest] = useState<any>(null)
 
   // Load existing prize structure and contest details on mount
   useEffect(() => {

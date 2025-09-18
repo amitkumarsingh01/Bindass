@@ -7,17 +7,16 @@ export default function Contact() {
   const [website, setWebsite] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [, setError] = useState('')
+  const [, setSuccess] = useState('')
   
   // How to Play content
-  const [howToPlay, setHowToPlay] = useState({
+  const [, setHowToPlay] = useState({
     english: '',
     hindi: '',
     kannada: ''
   })
-  const [howToPlayLoading, setHowToPlayLoading] = useState(true)
-  const [activeLanguage, setActiveLanguage] = useState<'english' | 'hindi' | 'kannada'>('english')
+  const [, setHowToPlayLoading] = useState(true)
 
   const load = async () => {
     setLoading(true)
