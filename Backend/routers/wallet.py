@@ -117,6 +117,66 @@ async def add_money_to_wallet(
             detail="Failed to add money to wallet"
         )
 
+@router.post("/add-money-via-payment")
+async def add_money_via_payment_gateway(
+    payload: dict,
+    current_user: User = Depends(resolve_user)
+):
+    """Add money to wallet via payment gateway (Cashfree)"""
+    try:
+        amount = float(payload.get("amount", 0))
+        description = payload.get("description", "Wallet top-up via payment gateway")
+        
+        if amount <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Amount must be greater than 0"
+            )
+        
+        if amount < 10:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Minimum payment amount is ₹10"
+            )
+        
+        if amount > 100000:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Maximum payment amount is ₹1,00,000"
+            )
+        
+        # Import here to avoid circular imports
+        from services.payment_service import payment_service
+        
+        result = await payment_service.create_payment_order(
+            user_id=str(current_user.id),
+            amount=amount,
+            customer_email=current_user.email,
+            customer_phone=current_user.phoneNumber,
+            description=description
+        )
+        
+        return {
+            "message": "Payment order created successfully. Please complete the payment.",
+            "orderId": result["orderId"],
+            "amount": result["amount"],
+            "paymentLink": result["paymentLink"],
+            "paymentSessionId": result.get("paymentSessionId"),
+            "status": result["status"]
+        }
+        
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid amount format"
+        )
+    except Exception as e:
+        logger.error(f"Error creating payment order: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create payment order: {str(e)}"
+        )
+
 @router.post("/withdraw")
 async def request_withdrawal(
     payload: dict,

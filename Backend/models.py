@@ -378,3 +378,48 @@ class WithdrawalCreate(BaseModel):
     amount: float
     bank_details_id: str
     withdrawal_method: WithdrawalMethod = WithdrawalMethod.BANK_TRANSFER
+
+# Payment Gateway Models
+class PaymentStatus(str, Enum):
+    PENDING = "PENDING"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
+    EXPIRED = "EXPIRED"
+
+class PaymentGateway(str, Enum):
+    CASHFREE = "CASHFREE"
+
+class PaymentTransaction(BaseModel):
+    id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
+    userId: PyObjectId
+    orderId: str = Field(..., unique=True)
+    amount: float
+    currency: str = "INR"
+    gateway: PaymentGateway = PaymentGateway.CASHFREE
+    gatewayOrderId: Optional[str] = None
+    gatewayPaymentId: Optional[str] = None
+    paymentLink: Optional[str] = None
+    paymentSessionId: Optional[str] = None
+    status: PaymentStatus = PaymentStatus.PENDING
+    gatewayResponse: Optional[dict] = None
+    createdAt: datetime = Field(default_factory=datetime.now)
+    updatedAt: datetime = Field(default_factory=datetime.now)
+    completedAt: Optional[datetime] = None
+
+    class Config:
+        populate_by_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+
+class PaymentCreate(BaseModel):
+    amount: float
+    description: Optional[str] = "Wallet top-up"
+
+class PaymentResponse(BaseModel):
+    orderId: str
+    amount: float
+    paymentLink: Optional[str] = None
+    paymentSessionId: Optional[str] = None
+    status: PaymentStatus
+    message: str

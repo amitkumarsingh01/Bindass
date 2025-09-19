@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 import logging
 from database import connect_to_mongo, close_mongo_connection, get_database
 from auth import get_password_hash
-from routers import auth, users, contests, seats, wallet, admin, notifications
+from routers import auth, users, contests, seats, wallet, admin, notifications, payments
 import os
 
 # Configure logging
@@ -123,6 +123,7 @@ app.include_router(seats.router, prefix="/api/seats", tags=["Seats"])
 app.include_router(wallet.router, prefix="/api/wallet", tags=["Wallet"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
+app.include_router(payments.router, prefix="/api/payment", tags=["Payments"])
 
 # Ensure static directory exists before mounting
 try:
