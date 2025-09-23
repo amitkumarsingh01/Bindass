@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     
     # Razorpay Payment Gateway Configuration
-    razorpay_key_id: str = "rzp_test_1234567890abcdef"
-    razorpay_key_secret: str = "test_key_secret_change_me"
+    razorpay_key_id: str = "rzp_live_RKwDSlcvXD4E14"
+    razorpay_key_secret: str = "vP14iBFn9tAik0GyMrl0sIyM"
     razorpay_api_base: str = "https://api.razorpay.com/v1"
     razorpay_return_url: str = "https://yourdomain.com/api/payment/return"
     

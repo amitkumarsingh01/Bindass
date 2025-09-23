@@ -27,12 +27,19 @@ async def lifespan(app: FastAPI):
         # Drop potentially existing unique indexes on phoneNumber or userId
         try:
             indexes = await db.users.index_information()
-            # Drop phoneNumber unique index if exists
+            # Drop legacy phoneNumber index name if exists
             if "phoneNumber_1" in indexes:
                 await db.users.drop_index("phoneNumber_1")
-            # Drop userId unique index if exists
+            # Drop legacy userId index name if exists
             if "userId_1" in indexes:
                 await db.users.drop_index("userId_1")
+            # Also try dropping our new names if they exist with wrong options
+            for legacy_name in ["userId_idx", "phoneNumber_idx"]:
+                try:
+                    if legacy_name in indexes:
+                        await db.users.drop_index(legacy_name)
+                except Exception as _drop_e:
+                    logger.warning(f"Dropping index {legacy_name} failed (may not exist): {_drop_e}")
         except Exception as _idxe:
             logger.warning(f"Issue inspecting/dropping user indexes: {_idxe}")
 
@@ -41,14 +48,7 @@ async def lifespan(app: FastAPI):
             await db.users.create_index("email", unique=True, name="email_1")
         except Exception as _cie:
             logger.warning(f"Creating unique index on email failed (may already exist): {_cie}")
-        try:
-            await db.users.create_index("userId", name="userId_1")
-        except Exception as _cie2:
-            logger.warning(f"Creating non-unique index on userId failed: {_cie2}")
-        try:
-            await db.users.create_index("phoneNumber", name="phoneNumber_1")
-        except Exception as _cie3:
-            logger.warning(f"Creating non-unique index on phoneNumber failed: {_cie3}")
+        # userId/phoneNumber indexes are managed in database.create_indexes()
     except Exception as se_idx:
         logger.error(f"Error ensuring user indexes: {se_idx}")
     # Seed default users if they don't exist

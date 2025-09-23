@@ -152,6 +152,10 @@ class PaymentService:
                     "gatewayPaymentId": gateway_payment_id,
                 }
 
+        except Exception as e:
+            logger.error(f"Error verifying payment: {e}")
+            raise Exception(f"Failed to verify payment: {str(e)}")
+
     async def process_successful_payment(self, order_id: str) -> bool:
         """Process successful payment by adding money to user's wallet"""
         database = get_database()

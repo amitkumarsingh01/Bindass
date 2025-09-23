@@ -36,36 +36,57 @@ async def close_mongo_connection():
 async def create_indexes():
     """Create database indexes for performance optimization"""
     try:
+        # Helper to check if an index with the same key pattern already exists
+        async def ensure_index(collection, keys, unique=False, name=None):
+            try:
+                info = await collection.index_information()
+                # Normalize keys to list of tuples
+                norm_keys = keys if isinstance(keys, list) else [(keys, 1)] if isinstance(keys, str) else keys
+                for idx in info.values():
+                    if idx.get('key') == norm_keys:
+                        return  # Index with same keys exists; do not recreate with a different name
+                await collection.create_index(keys, unique=unique, name=name)
+            except Exception as _e:
+                logger.warning(f"Ensuring index on {getattr(collection, 'name', 'unknown')} failed: {_e}")
         # Users Collection Indexes
-        await db.database.users.create_index("userId", unique=True)
-        await db.database.users.create_index("email", unique=True)
-        await db.database.users.create_index("phoneNumber", unique=True)
+        # Only ensure unique email index; leave existing userId/phoneNumber indexes untouched
+        try:
+            await ensure_index(db.database.users, "email", unique=True, name="email_1")
+        except Exception as _email_idx_e:
+            logger.warning(f"Ensuring unique email index failed (may exist): {_email_idx_e}")
         
         # Purchased Seats Collection Indexes
-        await db.database.purchased_seats.create_index([("contestId", 1), ("seatNumber", 1)], unique=True)
-        await db.database.purchased_seats.create_index("userId")
-        await db.database.purchased_seats.create_index([("contestId", 1), ("categoryId", 1)])
+        # Drop legacy composite index if it exists with a different name
+        try:
+            ps_indexes = await db.database.purchased_seats.index_information()
+            if "contestId_1_seatNumber_1" in ps_indexes:
+                await db.database.purchased_seats.drop_index("contestId_1_seatNumber_1")
+        except Exception as _ps_e:
+            logger.warning(f"Inspect/drop legacy purchased_seats index issue: {_ps_e}")
+        await ensure_index(db.database.purchased_seats, [("contestId", 1), ("seatNumber", 1)], unique=True, name="contest_seat_unique")
+        await ensure_index(db.database.purchased_seats, "userId", name="purchased_userId_idx")
+        await ensure_index(db.database.purchased_seats, [("contestId", 1), ("categoryId", 1)], name="contest_category_idx")
         
         # Contests Collection Indexes
-        await db.database.contests.create_index("status")
-        await db.database.contests.create_index("contestStartDate")
+        await ensure_index(db.database.contests, "status", name="contest_status_idx")
+        await ensure_index(db.database.contests, "contestStartDate", name="contest_start_idx")
         
         # Wallet Transactions Collection Indexes
-        await db.database.wallet_transactions.create_index([("userId", 1), ("createdAt", -1)])
-        await db.database.wallet_transactions.create_index("transactionId", unique=True)
+        await ensure_index(db.database.wallet_transactions, [("userId", 1), ("createdAt", -1)], name="wallet_user_date_idx")
+        await ensure_index(db.database.wallet_transactions, "transactionId", unique=True, name="wallet_txn_unique")
         
         # Winners Collection Indexes
-        await db.database.winners.create_index("contestId")
-        await db.database.winners.create_index("userId")
+        await ensure_index(db.database.winners, "contestId", name="winners_contest_idx")
+        await ensure_index(db.database.winners, "userId", name="winners_user_idx")
         
         # Bank Details Collection Indexes
-        await db.database.bank_details.create_index("userId")
+        await ensure_index(db.database.bank_details, "userId", name="bank_user_idx")
         
         # Withdrawals Collection Indexes
-        await db.database.withdrawals.create_index([("userId", 1), ("status", 1)])
+        await ensure_index(db.database.withdrawals, [("userId", 1), ("status", 1)], name="withdraw_user_status_idx")
         
         # Notifications Collection Indexes
-        await db.database.notifications.create_index([("userId", 1), ("isRead", 1)])
+        await ensure_index(db.database.notifications, [("userId", 1), ("isRead", 1)], name="notif_user_read_idx")
         
         logger.info("Database indexes created successfully")
         
