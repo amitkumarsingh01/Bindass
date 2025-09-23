@@ -257,6 +257,34 @@ class ApiService {
   }
 
   // Wallet endpoints
+  Future<Map<String, dynamic>> createPayment(
+    double amount,
+    String description,
+  ) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/payments/create'),
+      headers: _headers,
+      body: jsonEncode({'amount': amount, 'description': description}),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to create payment: ${response.body}');
+    }
+  }
+
+  Future<Map<String, dynamic>> getPaymentStatus(String orderId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/payments/status/$orderId'),
+      headers: _headers,
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to get payment status: ${response.body}');
+    }
+  }
+
   Future<Map<String, dynamic>> getWalletBalance() async {
     final response = await http.get(
       Uri.parse('$baseUrl/wallet/balance'),

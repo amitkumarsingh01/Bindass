@@ -389,6 +389,7 @@ class PaymentStatus(str, Enum):
 
 class PaymentGateway(str, Enum):
     CASHFREE = "CASHFREE"
+    RAZORPAY = "RAZORPAY"
 
 class PaymentTransaction(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
@@ -423,3 +424,5 @@ class PaymentResponse(BaseModel):
     paymentSessionId: Optional[str] = None
     status: PaymentStatus
     message: str
+    razorpayKeyId: Optional[str] = None
+    gatewayOrderId: Optional[str] = None

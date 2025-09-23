@@ -8,13 +8,11 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     
-    # Cashfree Payment Gateway Configuration
-    cashfree_client_id: str = "10778038a4f7f9a972c4db4739a3087701"
-    cashfree_client_secret: str = "cfsk_ma_prod_3c29e1f44d603a53240d7a4d3189defa_2dd27ccb"
-    cashfree_api_base: str = "https://api.cashfree.com"
-    cashfree_webhook_secret: Optional[str] = None
-    cashfree_return_url: str = "https://yourdomain.com/api/payment/return"
-    cashfree_notify_url: str = "https://yourdomain.com/api/payment/notify"
+    # Razorpay Payment Gateway Configuration
+    razorpay_key_id: str = "rzp_test_1234567890abcdef"
+    razorpay_key_secret: str = "test_key_secret_change_me"
+    razorpay_api_base: str = "https://api.razorpay.com/v1"
+    razorpay_return_url: str = "https://yourdomain.com/api/payment/return"
     
     class Config:
         env_file = ".env"

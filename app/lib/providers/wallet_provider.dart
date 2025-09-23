@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'dart:async';
 
 class WalletProvider with ChangeNotifier {
   ApiService? _apiService;
+  Razorpay? _razorpay;
 
   bool _isLoading = false;
   Map<String, dynamic>? _walletBalance;
@@ -16,6 +18,15 @@ class WalletProvider with ChangeNotifier {
 
   void setApiService(ApiService apiService) {
     _apiService = apiService;
+  }
+
+  void _initRazorpay() {
+    _razorpay ??= Razorpay();
+  }
+
+  void disposeRazorpay() {
+    _razorpay!.clear();
+    _razorpay = null;
   }
 
   bool get isLoading => _isLoading;
@@ -65,19 +76,91 @@ class WalletProvider with ChangeNotifier {
     _clearError();
 
     try {
-      // Fetch stored password from login
-      final prefs = await SharedPreferences.getInstance();
-      final password = prefs.getString('user_password') ?? '';
-      await _apiService!.addMoneyToWallet(amount, description, password);
+      _initRazorpay();
+
+      // 1) Create order via backend
+      final create = await _apiService!.createPayment(amount, description);
+      final orderId = create['orderId'] as String;
+      final gatewayOrderId = create['gatewayOrderId'] as String?;
+      final razorpayKeyId = create['razorpayKeyId'] as String?;
+
+      if (gatewayOrderId == null || razorpayKeyId == null) {
+        throw Exception('Invalid payment init response');
+      }
+
+      final completer = Completer<bool>();
+
+      _razorpay!.on(Razorpay.EVENT_PAYMENT_SUCCESS, (
+        PaymentSuccessResponse response,
+      ) async {
+        // Start polling on success event too (final capture confirmation comes via status)
+        final ok = await _pollPaymentStatus(orderId);
+        completer.complete(ok);
+      });
+
+      _razorpay!.on(Razorpay.EVENT_PAYMENT_ERROR, (
+        PaymentFailureResponse response,
+      ) async {
+        // Still poll in case of late capture, but likely fail fast
+        await _pollPaymentStatus(orderId);
+        completer.complete(false);
+      });
+
+      _razorpay!.on(Razorpay.EVENT_EXTERNAL_WALLET, (
+        ExternalWalletResponse response,
+      ) async {
+        // External wallet chosen; proceed to poll backend
+        final ok = await _pollPaymentStatus(orderId);
+        completer.complete(ok);
+      });
+
+      // 2) Open Razorpay checkout
+      final options = {
+        'key': razorpayKeyId,
+        'amount': (amount * 100).toInt(),
+        'currency': 'INR',
+        'name': 'Bindass Grand',
+        'description': description,
+        'order_id': gatewayOrderId,
+        'timeout': 900, // 15 minutes
+        'prefill': {},
+        'retry': {'enabled': true, 'max_count': 1},
+      };
+      _razorpay!.open(options);
+
+      final success = await completer.future.timeout(
+        const Duration(minutes: 16),
+        onTimeout: () => false,
+      );
+
+      // Refresh data regardless
       await loadWalletBalance();
       await loadTransactions();
-      return true;
+      return success;
     } catch (e) {
       _setError(e.toString());
       return false;
     } finally {
       _setLoading(false);
     }
+  }
+
+  Future<bool> _pollPaymentStatus(String orderId) async {
+    if (_apiService == null) return false;
+    const totalDuration = Duration(minutes: 15);
+    const interval = Duration(seconds: 3);
+    final started = DateTime.now();
+    while (DateTime.now().difference(started) < totalDuration) {
+      try {
+        final status = await _apiService!.getPaymentStatus(orderId);
+        final dynamic raw = status['status'];
+        final s = (raw == null ? null : raw.toString().toUpperCase());
+        if (s == 'SUCCESS') return true;
+        if (s == 'FAILED' || s == 'CANCELLED' || s == 'EXPIRED') return false;
+      } catch (_) {}
+      await Future.delayed(interval);
+    }
+    return false;
   }
 
   Future<bool> requestWithdrawal(
