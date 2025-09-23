@@ -261,26 +261,51 @@ class ApiService {
     double amount,
     String description,
   ) async {
+    // 🧾 Log request
+    try {
+      final userId = _prefs.getString('user_id') ?? 'guest';
+      // Do not log tokens/passwords. Safe to log these basics.
+      // 🚀 Creating payment
+      // ignore: avoid_print
+      print('➡️  POST $baseUrl/payments/create');
+      // ignore: avoid_print
+      print('📝  Body: {amount: $amount, description: $description}');
+      // ignore: avoid_print
+      print('👤  Header X-User-Id: $userId');
+    } catch (_) {}
     final response = await http.post(
       Uri.parse('$baseUrl/payments/create'),
       headers: _headers,
       body: jsonEncode({'amount': amount, 'description': description}),
     );
     if (response.statusCode == 200) {
+      // 📦 Log response
+      // ignore: avoid_print
+      print('✅  Response 200: ${response.body}');
       return jsonDecode(response.body);
     } else {
+      // ❌ Log error response
+      // ignore: avoid_print
+      print('❌  Response ${response.statusCode}: ${response.body}');
       throw Exception('Failed to create payment: ${response.body}');
     }
   }
 
   Future<Map<String, dynamic>> getPaymentStatus(String orderId) async {
+    // 🔁 Polling status
+    // ignore: avoid_print
+    print('🔁  GET $baseUrl/payments/status/$orderId');
     final response = await http.get(
       Uri.parse('$baseUrl/payments/status/$orderId'),
       headers: _headers,
     );
     if (response.statusCode == 200) {
+      // ignore: avoid_print
+      print('📦  Status 200: ${response.body}');
       return jsonDecode(response.body);
     } else {
+      // ignore: avoid_print
+      print('❌  Status ${response.statusCode}: ${response.body}');
       throw Exception('Failed to get payment status: ${response.body}');
     }
   }

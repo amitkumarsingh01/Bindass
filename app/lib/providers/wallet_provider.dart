@@ -80,6 +80,8 @@ class WalletProvider with ChangeNotifier {
 
       // 1) Create order via backend
       final create = await _apiService!.createPayment(amount, description);
+      // ignore: avoid_print
+      print('🧾  Created payment: $create');
       final orderId = create['orderId'] as String;
       final gatewayOrderId = create['gatewayOrderId'] as String?;
       final razorpayKeyId = create['razorpayKeyId'] as String?;
@@ -93,6 +95,10 @@ class WalletProvider with ChangeNotifier {
       _razorpay!.on(Razorpay.EVENT_PAYMENT_SUCCESS, (
         PaymentSuccessResponse response,
       ) async {
+        // ignore: avoid_print
+        print(
+          '🎉  Razorpay SUCCESS: paymentId=${response.paymentId} orderId=${response.orderId} signature=${response.signature}',
+        );
         // Start polling on success event too (final capture confirmation comes via status)
         final ok = await _pollPaymentStatus(orderId);
         completer.complete(ok);
@@ -101,6 +107,10 @@ class WalletProvider with ChangeNotifier {
       _razorpay!.on(Razorpay.EVENT_PAYMENT_ERROR, (
         PaymentFailureResponse response,
       ) async {
+        // ignore: avoid_print
+        print(
+          '💥  Razorpay ERROR: code=${response.code} message=${response.message}',
+        );
         // Still poll in case of late capture, but likely fail fast
         await _pollPaymentStatus(orderId);
         completer.complete(false);
@@ -109,6 +119,8 @@ class WalletProvider with ChangeNotifier {
       _razorpay!.on(Razorpay.EVENT_EXTERNAL_WALLET, (
         ExternalWalletResponse response,
       ) async {
+        // ignore: avoid_print
+        print('👛  Razorpay EXTERNAL WALLET: ${response.walletName}');
         // External wallet chosen; proceed to poll backend
         final ok = await _pollPaymentStatus(orderId);
         completer.complete(ok);
@@ -127,6 +139,8 @@ class WalletProvider with ChangeNotifier {
         'retry': {'enabled': true, 'max_count': 1},
       };
       _razorpay!.open(options);
+      // ignore: avoid_print
+      print('🧰  Razorpay.open options: $options');
 
       final success = await completer.future.timeout(
         const Duration(minutes: 16),
@@ -138,6 +152,8 @@ class WalletProvider with ChangeNotifier {
       await loadTransactions();
       return success;
     } catch (e) {
+      // ignore: avoid_print
+      print('🛑  Add money flow error: $e');
       _setError(e.toString());
       return false;
     } finally {
@@ -155,6 +171,8 @@ class WalletProvider with ChangeNotifier {
         final status = await _apiService!.getPaymentStatus(orderId);
         final dynamic raw = status['status'];
         final s = (raw == null ? null : raw.toString().toUpperCase());
+        // ignore: avoid_print
+        print('📡  Polled status: $status');
         if (s == 'SUCCESS') return true;
         if (s == 'FAILED' || s == 'CANCELLED' || s == 'EXPIRED') return false;
       } catch (_) {}
