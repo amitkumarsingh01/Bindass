@@ -249,7 +249,7 @@ async def get_all_withdrawals(
     limit: int = 20,
     skip: int = 0
 ):
-    """Get all withdrawal requests"""
+    """Get all withdrawal requests - returns all withdrawals with full details"""
     database = get_database()
     
     query = {}
@@ -270,17 +270,29 @@ async def get_all_withdrawals(
         withdrawal["user"] = {
             "userId": user["userId"] if user else "N/A",
             "userName": user["userName"] if user else "N/A",
-            "phoneNumber": user["phoneNumber"] if user else "N/A"
+            "phoneNumber": user["phoneNumber"] if user else "N/A",
+            "email": user.get("email", "N/A") if user else "N/A"
         }
-        withdrawal["bankDetails"] = bank_details
+        withdrawal["bankDetails"] = {
+            "id": str(bank_details["_id"]) if bank_details else None,
+            "accountNumber": bank_details["accountNumber"] if bank_details else "N/A",
+            "accountHolderName": bank_details["accountHolderName"] if bank_details else "N/A",
+            "bankName": bank_details["bankName"] if bank_details else "N/A",
+            "ifscCode": bank_details["ifscCode"] if bank_details else "N/A",
+            "isVerified": bank_details.get("isVerified", False) if bank_details else False
+        }
         
         withdrawals.append(withdrawal)
     
+    # Get total count for pagination
+    total_count = await database.withdrawals.count_documents(query)
+    
     return {
         "withdrawals": withdrawals,
-        "total": len(withdrawals),
+        "total": total_count,
         "limit": limit,
-        "skip": skip
+        "skip": skip,
+        "hasMore": (skip + limit) < total_count
     }
 
 # =========================
@@ -585,7 +597,7 @@ async def update_withdrawal_status(
     status: WithdrawalStatus,
     admin_notes: str = None
 ):
-    """Update withdrawal status"""
+    """Update withdrawal status - automatically marks bank as verified"""
     database = get_database()
     
     if not ObjectId.is_valid(withdrawal_id):
@@ -612,6 +624,13 @@ async def update_withdrawal_status(
     if status == WithdrawalStatus.COMPLETED:
         update_data["processedDate"] = datetime.now()
         update_data["transactionId"] = f"TXN_{int(datetime.now().timestamp())}"
+        
+        # Auto-verify bank details when withdrawal is completed
+        await database.bank_details.update_one(
+            {"_id": withdrawal["bankDetailsId"]},
+            {"$set": {"isVerified": True, "verifiedAt": datetime.now()}}
+        )
+        
     elif status == WithdrawalStatus.REJECTED:
         update_data["processedDate"] = datetime.now()
     

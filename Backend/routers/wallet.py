@@ -210,7 +210,7 @@ async def request_withdrawal(
             detail="Minimum withdrawal amount is ₹100"
         )
     
-    # Check if bank details exist
+    # Check if bank details exist (no verification required)
     if not ObjectId.is_valid(bank_details_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -225,13 +225,7 @@ async def request_withdrawal(
     if not bank_details:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Bank details not found"
-        )
-    
-    if not bank_details["isVerified"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Bank details not verified"
+            detail="Bank details not found. Please add bank details first."
         )
     
     # Check for pending withdrawals
