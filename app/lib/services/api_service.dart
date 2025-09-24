@@ -261,22 +261,18 @@ class ApiService {
     double amount,
     String description,
   ) async {
+    // Use fresh simple payments API
+    final userId = _prefs.getString('user_id') ?? 'guest';
     // 🧾 Log request
-    try {
-      final userId = _prefs.getString('user_id') ?? 'guest';
-      // Do not log tokens/passwords. Safe to log these basics.
-      // 🚀 Creating payment
-      // ignore: avoid_print
-      print('➡️  POST $baseUrl/payments/create');
-      // ignore: avoid_print
-      print('📝  Body: {amount: $amount, description: $description}');
-      // ignore: avoid_print
-      print('👤  Header X-User-Id: $userId');
-    } catch (_) {}
+    // ignore: avoid_print
+    print(
+      '➡️  POST $baseUrl/new/payment/create?user_id=$userId&amount=$amount&description=$description',
+    );
     final response = await http.post(
-      Uri.parse('$baseUrl/payments/create'),
-      headers: _headers,
-      body: jsonEncode({'amount': amount, 'description': description}),
+      Uri.parse(
+        '$baseUrl/new/payment/create?user_id=${Uri.encodeComponent(userId)}&amount=$amount&description=${Uri.encodeComponent(description)}',
+      ),
+      headers: {'Content-Type': 'application/json'},
     );
     if (response.statusCode == 200) {
       // 📦 Log response
@@ -292,12 +288,12 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> getPaymentStatus(String orderId) async {
-    // 🔁 Polling status
+    // 🔁 Polling status via fresh simple payments API
     // ignore: avoid_print
-    print('🔁  GET $baseUrl/payments/status/$orderId');
+    print('🔁  GET $baseUrl/new/payment/status/$orderId');
     final response = await http.get(
-      Uri.parse('$baseUrl/payments/status/$orderId'),
-      headers: _headers,
+      Uri.parse('$baseUrl/new/payment/status/$orderId'),
+      headers: {'Content-Type': 'application/json'},
     );
     if (response.statusCode == 200) {
       // ignore: avoid_print

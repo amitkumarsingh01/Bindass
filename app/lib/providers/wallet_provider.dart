@@ -82,9 +82,9 @@ class WalletProvider with ChangeNotifier {
       final create = await _apiService!.createPayment(amount, description);
       // ignore: avoid_print
       print('🧾  Created payment: $create');
-      final orderId = create['orderId'] as String;
-      final gatewayOrderId = create['gatewayOrderId'] as String?;
-      final razorpayKeyId = create['razorpayKeyId'] as String?;
+      final orderId = create['order_id'] as String;
+      final gatewayOrderId = create['razorpay_order_id'] as String?;
+      final razorpayKeyId = create['razorpay_key_id'] as String?;
 
       if (gatewayOrderId == null || razorpayKeyId == null) {
         throw Exception('Invalid payment init response');
