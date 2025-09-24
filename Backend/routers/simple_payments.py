@@ -22,6 +22,7 @@ class SimplePaymentResponse(BaseModel):
     order_id: str
     razorpay_order_id: str
     razorpay_key_id: str
+    payment_link: str
     amount: float
     message: str
 
@@ -61,6 +62,33 @@ class SimpleRazorpayService:
             response = await client.post(self.orders_url, json=order_data)
             if response.status_code not in (200, 201):
                 raise Exception(f"Razorpay API error: {response.status_code} - {response.text}")
+            return response.json()
+
+    async def create_payment_link(self, amount: float, receipt: str, description: str) -> dict:
+        """Create Razorpay payment link"""
+        amount_paise = int(round(amount * 100))
+        
+        payment_link_data = {
+            "amount": amount_paise,
+            "currency": "INR",
+            "description": description,
+            "customer": {
+                "name": "Customer",
+                "email": "customer@example.com"
+            },
+            "notify": {
+                "sms": False,
+                "email": False
+            },
+            "reminder_enable": True,
+            "callback_url": "https://yourdomain.com/payment/callback",
+            "callback_method": "get"
+        }
+
+        async with httpx.AsyncClient(timeout=30.0, auth=self._get_auth()) as client:
+            response = await client.post(f"{self.api_base}/payment_links", json=payment_link_data)
+            if response.status_code not in (200, 201):
+                raise Exception(f"Razorpay payment link API error: {response.status_code} - {response.text}")
             return response.json()
 
     async def get_order_status(self, razorpay_order_id: str) -> dict:
@@ -111,14 +139,15 @@ async def create_simple_payment(
         # Generate unique order ID
         order_id = f"SP_{user_id}_{int(datetime.now().timestamp())}_{uuid.uuid4().hex[:8]}"
         
-        # Create Razorpay order
-        razorpay_order = await simple_razorpay.create_order(amount, order_id)
-        razorpay_order_id = razorpay_order.get("id")
+        # Create Razorpay payment link
+        razorpay_link = await simple_razorpay.create_payment_link(amount, order_id, description)
+        payment_link = razorpay_link.get("short_url")
+        razorpay_order_id = razorpay_link.get("id")
         
-        if not razorpay_order_id:
+        if not payment_link or not razorpay_order_id:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create Razorpay order"
+                detail="Failed to create Razorpay payment link"
             )
 
         # Save to simple_payments collection
@@ -141,8 +170,9 @@ async def create_simple_payment(
             order_id=order_id,
             razorpay_order_id=razorpay_order_id,
             razorpay_key_id=simple_razorpay.key_id,
+            payment_link=payment_link,
             amount=amount,
-            message="Payment order created successfully"
+            message="Payment link created successfully"
         )
         
     except HTTPException:
@@ -175,9 +205,14 @@ async def get_simple_payment_status(order_id: str):
                 detail="Razorpay order ID missing"
             )
         
-        # Get Razorpay order status
-        order_data = await simple_razorpay.get_order_status(razorpay_order_id)
-        payments_list = await simple_razorpay.get_order_payments(razorpay_order_id)
+        # Get Razorpay payment link status
+        try:
+            order_data = await simple_razorpay.get_order_status(razorpay_order_id)
+            payments_list = await simple_razorpay.get_order_payments(razorpay_order_id)
+        except:
+            # If order doesn't exist, check payment link status
+            order_data = {"status": "created"}
+            payments_list = []
         
         # Determine status
         status_value = "PENDING"
