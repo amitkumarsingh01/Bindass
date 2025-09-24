@@ -7,12 +7,12 @@ Run this once to update existing data in the database
 import asyncio
 from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorClient
-from config import MONGODB_URL
+from config import settings
 
 async def update_all_bank_details():
     """Update all existing bank details to be auto-verified"""
-    client = AsyncIOMotorClient(MONGODB_URL)
-    database = client.bindass_grand
+    client = AsyncIOMotorClient(settings.mongodb_url)
+    database = client[settings.database_name]
     
     print("🔄 Updating all bank details to be auto-verified...")
     
