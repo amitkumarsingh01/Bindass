@@ -111,6 +111,25 @@ class SimpleRazorpayService:
 # Global service instance
 simple_razorpay = SimpleRazorpayService()
 
+@router.get("/test")
+async def test_razorpay_connection():
+    """Test Razorpay API connection"""
+    try:
+        # Test with a small amount
+        test_order = await simple_razorpay.create_order(1.0, "test_order")
+        return {
+            "success": True,
+            "message": "Razorpay connection successful",
+            "key_id": simple_razorpay.key_id,
+            "test_order_id": test_order.get("id")
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Razorpay connection failed: {str(e)}",
+            "key_id": simple_razorpay.key_id
+        }
+
 @router.post("/create", response_model=SimplePaymentResponse)
 async def create_simple_payment(
     user_id: str = Query(..., description="User ID"),
@@ -139,15 +158,14 @@ async def create_simple_payment(
         # Generate unique order ID
         order_id = f"SP_{user_id}_{int(datetime.now().timestamp())}_{uuid.uuid4().hex[:8]}"
         
-        # Create Razorpay payment link
-        razorpay_link = await simple_razorpay.create_payment_link(amount, order_id, description)
-        payment_link = razorpay_link.get("short_url")
-        razorpay_order_id = razorpay_link.get("id")
+        # Create Razorpay order
+        razorpay_order = await simple_razorpay.create_order(amount, order_id)
+        razorpay_order_id = razorpay_order.get("id")
         
-        if not payment_link or not razorpay_order_id:
+        if not razorpay_order_id:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create Razorpay payment link"
+                detail="Failed to create Razorpay order"
             )
 
         # Save to simple_payments collection
@@ -170,9 +188,9 @@ async def create_simple_payment(
             order_id=order_id,
             razorpay_order_id=razorpay_order_id,
             razorpay_key_id=simple_razorpay.key_id,
-            payment_link=payment_link,
+            payment_link="",  # Not needed for Flutter SDK
             amount=amount,
-            message="Payment link created successfully"
+            message="Razorpay order created successfully"
         )
         
     except HTTPException:
@@ -205,14 +223,9 @@ async def get_simple_payment_status(order_id: str):
                 detail="Razorpay order ID missing"
             )
         
-        # Get Razorpay payment link status
-        try:
-            order_data = await simple_razorpay.get_order_status(razorpay_order_id)
-            payments_list = await simple_razorpay.get_order_payments(razorpay_order_id)
-        except:
-            # If order doesn't exist, check payment link status
-            order_data = {"status": "created"}
-            payments_list = []
+        # Get Razorpay order status
+        order_data = await simple_razorpay.get_order_status(razorpay_order_id)
+        payments_list = await simple_razorpay.get_order_payments(razorpay_order_id)
         
         # Determine status
         status_value = "PENDING"

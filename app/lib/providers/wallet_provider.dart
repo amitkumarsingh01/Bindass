@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 
 class WalletProvider with ChangeNotifier {
@@ -22,7 +21,11 @@ class WalletProvider with ChangeNotifier {
   }
 
   void _initRazorpay() {
-    _razorpay ??= Razorpay();
+    if (_razorpay == null) {
+      _razorpay = Razorpay();
+      // ignore: avoid_print
+      print('🔧  Razorpay initialized');
+    }
   }
 
   void disposeRazorpay() {
@@ -79,32 +82,76 @@ class WalletProvider with ChangeNotifier {
     try {
       _initRazorpay();
 
-      // 1) Create payment link via backend
+      // 1) Create Razorpay order via backend
       final create = await _apiService!.createPayment(amount, description);
       // ignore: avoid_print
       print('🧾  Created payment: $create');
       final orderId = create['order_id'] as String;
-      final paymentLink = create['payment_link'] as String?;
+      final razorpayOrderId = create['razorpay_order_id'] as String?;
+      final razorpayKeyId = create['razorpay_key_id'] as String?;
 
-      if (paymentLink == null) {
-        throw Exception('Invalid payment link response');
+      if (razorpayOrderId == null || razorpayKeyId == null) {
+        throw Exception('Invalid Razorpay order response');
       }
 
-      // 2) Open payment link in browser
-      // ignore: avoid_print
-      print('🔗  Opening payment link: $paymentLink');
+      final completer = Completer<bool>();
 
-      final uri = Uri.parse(paymentLink);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      // Set up Razorpay event handlers
+      _razorpay!.on(Razorpay.EVENT_PAYMENT_SUCCESS, (
+        PaymentSuccessResponse response,
+      ) async {
         // ignore: avoid_print
-        print('🌐  Payment link opened in browser');
-      } else {
-        throw Exception('Could not open payment link');
-      }
+        print(
+          '🎉  Razorpay SUCCESS: paymentId=${response.paymentId} orderId=${response.orderId} signature=${response.signature}',
+        );
+        // Start polling to confirm payment and credit wallet
+        final ok = await _pollPaymentStatus(orderId);
+        completer.complete(ok);
+      });
 
-      // Start polling immediately for 15 minutes
-      final success = await _pollPaymentStatus(orderId);
+      _razorpay!.on(Razorpay.EVENT_PAYMENT_ERROR, (
+        PaymentFailureResponse response,
+      ) async {
+        // ignore: avoid_print
+        print(
+          '💥  Razorpay ERROR: code=${response.code} message=${response.message}',
+        );
+        // Still poll in case of late capture
+        await _pollPaymentStatus(orderId);
+        completer.complete(false);
+      });
+
+      _razorpay!.on(Razorpay.EVENT_EXTERNAL_WALLET, (
+        ExternalWalletResponse response,
+      ) async {
+        // ignore: avoid_print
+        print('👛  Razorpay EXTERNAL WALLET: ${response.walletName}');
+        // External wallet chosen; proceed to poll backend
+        final ok = await _pollPaymentStatus(orderId);
+        completer.complete(ok);
+      });
+
+      // 2) Open Razorpay checkout
+      final options = {
+        'key': razorpayKeyId,
+        'amount': (amount * 100).toInt(),
+        'currency': 'INR',
+        'name': 'Bindass Grand',
+        'description': description,
+        'order_id': razorpayOrderId,
+        'timeout': 300, // 5 minutes
+        'prefill': {'contact': '', 'email': ''},
+        'theme': {'color': '#db9822'},
+      };
+
+      // ignore: avoid_print
+      print('🧰  Opening Razorpay checkout with options: $options');
+      _razorpay!.open(options);
+
+      final success = await completer.future.timeout(
+        const Duration(minutes: 16),
+        onTimeout: () => false,
+      );
 
       // Refresh data regardless
       await loadWalletBalance();
