@@ -290,11 +290,17 @@ async def get_all_withdrawals(
                 }
                 withdrawal["bankDetails"] = {
                     "id": str(bank_details["_id"]) if bank_details else None,
-                    "accountNumber": bank_details["accountNumber"] if bank_details else "N/A",
-                    "accountHolderName": bank_details["accountHolderName"] if bank_details else "N/A",
-                    "bankName": bank_details["bankName"] if bank_details else "N/A",
-                    "ifscCode": bank_details["ifscCode"] if bank_details else "N/A",
-                    "isVerified": bank_details.get("isVerified", True) if bank_details else True
+                    "accountNumber": bank_details.get("accountNumber", "N/A") if bank_details else "N/A",
+                    "accountHolderName": bank_details.get("accountHolderName", "N/A") if bank_details else "N/A",
+                    "bankName": bank_details.get("bankName", "N/A") if bank_details else "N/A",
+                    "ifscCode": bank_details.get("ifscCode", "N/A") if bank_details else "N/A",
+                    "upiId": bank_details.get("upiId", "N/A") if bank_details else "N/A",
+                    "place": bank_details.get("place", "N/A") if bank_details else "N/A",
+                    "extraParameter1": bank_details.get("extraParameter1", "") if bank_details else "",
+                    "isVerified": bank_details.get("isVerified", True) if bank_details else True,
+                    "verifiedAt": bank_details.get("verifiedAt") if bank_details else None,
+                    "createdAt": bank_details.get("createdAt") if bank_details else None,
+                    "updatedAt": bank_details.get("updatedAt") if bank_details else None
                 }
                 
                 withdrawals.append(withdrawal)
@@ -660,9 +666,45 @@ async def update_withdrawal_status(
             {"_id": withdrawal["bankDetailsId"]},
             {"$set": {"isVerified": True, "verifiedAt": datetime.now()}}
         )
+        # Nothing to do on wallet here; debited at request time
         
     elif status == WithdrawalStatus.REJECTED:
         update_data["processedDate"] = datetime.now()
+        # Refund the reserved amount if previously debited
+        debited_txn = await database.wallet_transactions.find_one({
+            "referenceId": str(withdrawal["_id"]),
+            "category": "withdrawal",
+            "transactionType": "debit"
+        })
+        already_refunded = await database.wallet_transactions.find_one({
+            "referenceId": str(withdrawal["_id"]),
+            "category": "withdrawal",
+            "transactionType": "credit"
+        })
+        if debited_txn and not already_refunded:
+            user = await database.users.find_one({"_id": withdrawal["userId"]})
+            if user:
+                amount = float(withdrawal.get("amount", 0) or 0)
+                current_balance = float(user.get("walletBalance", 0) or 0)
+                new_balance = current_balance + amount
+                await database.users.update_one(
+                    {"_id": user["_id"]},
+                    {"$set": {"walletBalance": new_balance}}
+                )
+                refund_txn = {
+                    "userId": user["_id"],
+                    "transactionId": f"WD_REFUND_{str(withdrawal['_id'])}",
+                    "transactionType": "credit",
+                    "amount": amount,
+                    "description": "Withdrawal rejected - amount refunded",
+                    "category": "withdrawal",
+                    "balanceBefore": current_balance,
+                    "balanceAfter": new_balance,
+                    "status": "completed",
+                    "referenceId": str(withdrawal["_id"]),
+                    "createdAt": datetime.now()
+                }
+                await database.wallet_transactions.insert_one(refund_txn)
     
     await database.withdrawals.update_one(
         {"_id": ObjectId(withdrawal_id)},

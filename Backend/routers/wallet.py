@@ -254,10 +254,41 @@ async def request_withdrawal(
         }
         
         result = await database.withdrawals.insert_one(withdrawal)
-        
+        withdrawal_id = result.inserted_id
+
+        # Immediately debit user's wallet (reserve funds)
+        current_balance = float(current_user.walletBalance or 0)
+        new_balance = current_balance - amount
+        await database.users.update_one(
+            {"_id": current_user.id},
+            {"$set": {"walletBalance": new_balance}}
+        )
+
+        # Create wallet transaction for debit
+        wallet_txn = {
+            "userId": current_user.id,
+            "transactionId": f"WD_{str(withdrawal_id)}",
+            "transactionType": "debit",
+            "amount": amount,
+            "description": "Withdrawal requested - amount debited",
+            "category": "withdrawal",
+            "balanceBefore": current_balance,
+            "balanceAfter": new_balance,
+            "status": "completed",
+            "referenceId": str(withdrawal_id),
+            "createdAt": datetime.now()
+        }
+        await database.wallet_transactions.insert_one(wallet_txn)
+
+        # Mark withdrawal with debit trace
+        await database.withdrawals.update_one(
+            {"_id": withdrawal_id},
+            {"$set": {"walletDebited": True, "walletDebitTransactionId": wallet_txn["transactionId"]}}
+        )
+
         return {
             "message": "Withdrawal request submitted successfully",
-            "withdrawalId": str(result.inserted_id),
+            "withdrawalId": str(withdrawal_id),
             "amount": amount,
             "status": WithdrawalStatus.PENDING
         }
