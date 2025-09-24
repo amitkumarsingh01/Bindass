@@ -683,22 +683,14 @@ class _BankDetailsScreenState extends State<BankDetailsScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: bankDetails['isVerified'] == true
-                        ? Colors.green.withOpacity(0.1)
-                        : Colors.orange.withOpacity(0.1),
+                    color: Colors.green.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: bankDetails['isVerified'] == true
-                          ? Colors.green
-                          : Colors.orange,
-                    ),
+                    border: Border.all(color: Colors.green),
                   ),
-                  child: Text(
-                    bankDetails['isVerified'] == true ? 'Verified' : 'Pending',
+                  child: const Text(
+                    'Verified',
                     style: TextStyle(
-                      color: bankDetails['isVerified'] == true
-                          ? Colors.green
-                          : Colors.orange,
+                      color: Colors.green,
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),

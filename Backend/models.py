@@ -56,7 +56,8 @@ class BankDetails(BaseModel):
     place: str
     upiId: Optional[str] = None
     extraParameter1: Optional[str] = None
-    isVerified: bool = False
+    isVerified: bool = True  # Auto-verified by default
+    verifiedAt: Optional[datetime] = None
     createdAt: datetime = Field(default_factory=datetime.now)
     updatedAt: datetime = Field(default_factory=datetime.now)
 

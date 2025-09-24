@@ -59,7 +59,8 @@ async def add_bank_details(
 
     try:
         updates = bank_details.dict()
-        updates["isVerified"] = False
+        updates["isVerified"] = True  # Auto-verify all bank details
+        updates["verifiedAt"] = datetime.now()
         updates["updatedAt"] = datetime.now()
 
         # Upsert by userId, set createdAt only on insert
