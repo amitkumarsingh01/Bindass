@@ -41,10 +41,13 @@ class ApiService {
       Uri.parse('$baseUrl/auth/register-simple'),
       headers: _headers,
       body: jsonEncode({
+        'userName': userData['userName'],
+        'userId': userData['userId'],
         'email': userData['email'],
         'phoneNumber': userData['phoneNumber'],
         'password': userData['password'],
-        'userName': userData['userName'],
+        'city': userData['city'],
+        'state': userData['state'],
       }),
     );
     if (response.statusCode == 200) {
