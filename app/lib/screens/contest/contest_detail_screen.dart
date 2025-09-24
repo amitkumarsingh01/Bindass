@@ -362,6 +362,7 @@ class _CategoriesTab extends StatelessWidget {
           contestId: contestId,
           contestName: contestName,
           ticketPrice: ticketPrice,
+          index: index,
         );
       },
     );
@@ -373,18 +374,20 @@ class _CategoryCard extends StatelessWidget {
   final String contestId;
   final String contestName;
   final double ticketPrice;
+  final int index;
 
   const _CategoryCard({
     required this.category,
     required this.contestId,
     required this.contestName,
     required this.ticketPrice,
+    required this.index,
   });
 
   @override
   Widget build(BuildContext context) {
     final categoryName = category['categoryName'] ?? 'Category';
-    final imagePath = _getCategoryImagePath(categoryName);
+    final imagePath = _getCategoryImagePathByIndex(index);
 
     return GestureDetector(
       onTap: () {
@@ -401,16 +404,21 @@ class _CategoryCard extends StatelessWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.transparent,
           borderRadius: BorderRadius.circular(16),
-          // boxShadow: [
-          //   BoxShadow(
-          //     color: Colors.grey.withOpacity(0.1),
-          //     spreadRadius: 1,
-          //     blurRadius: 8,
-          //     offset: const Offset(0, 2),
-          //   ),
-          // ],
+          gradient: const LinearGradient(
+            colors: [Color.fromARGB(255, 215, 151, 73), Colors.white],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            stops: [0.0, 1.0],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(color: Colors.black.withOpacity(0.1)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -421,7 +429,7 @@ class _CategoryCard extends StatelessWidget {
               height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFdb9822), width: 3),
+                border: Border.all(color: Colors.white, width: 3),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(7.0),
@@ -433,19 +441,19 @@ class _CategoryCard extends StatelessWidget {
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
-                        color: const Color(0xFFdb9822).withOpacity(0.1),
+                        color: Colors.white.withOpacity(0.1),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              Icons.category,
-                              color: const Color(0xFFdb9822),
+                              Icons.category_outlined,
+                              color: const Color.fromARGB(255, 0, 0, 0),
                               size: 30,
                             ),
                             Text(
                               categoryName.substring(0, 1).toUpperCase(),
                               style: const TextStyle(
-                                color: Color(0xFFdb9822),
+                                color: const Color.fromARGB(255, 0, 0, 0),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
@@ -461,15 +469,22 @@ class _CategoryCard extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // Category name
-            Text(
-              categoryName.toUpperCase(),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFFdb9822),
+            // Category name badge with dark-brown background
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4E342E), // dark brown
+                borderRadius: BorderRadius.circular(8),
               ),
-              textAlign: TextAlign.center,
+              child: Text(
+                categoryName.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
 
             const SizedBox(height: 8),
@@ -479,7 +494,7 @@ class _CategoryCard extends StatelessWidget {
               'SEATS : ${category['seatRangeStart'] ?? 0}-${category['seatRangeEnd'] ?? 0}',
               style: const TextStyle(
                 fontSize: 12,
-                color: Color(0xFFdb9822),
+                color: const Color.fromARGB(255, 0, 0, 0),
                 fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.center,
@@ -492,7 +507,7 @@ class _CategoryCard extends StatelessWidget {
               'Available : ${category['availableSeats'] ?? 0} / ${category['totalSeats'] ?? 0}',
               style: const TextStyle(
                 fontSize: 12,
-                color: Color(0xFFdb9822),
+                color: const Color.fromARGB(255, 0, 0, 0),
                 fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.center,
@@ -503,31 +518,10 @@ class _CategoryCard extends StatelessWidget {
     );
   }
 
-  String _getCategoryImagePath(String categoryName) {
-    switch (categoryName.toLowerCase()) {
-      case 'bike':
-        return 'assets/bike.png';
-      case 'auto':
-        return 'assets/Auto.png';
-      case 'car':
-        return 'assets/car.png';
-      case 'jeep':
-        return 'assets/jeep.png';
-      case 'van':
-        return 'assets/van.png';
-      case 'bus':
-        return 'assets/bus.png';
-      case 'lorry':
-        return 'assets/lorry.png';
-      case 'train':
-        return 'assets/train.png';
-      case 'helicopter':
-        return 'assets/helicopter.png';
-      case 'airplane':
-        return 'assets/Airplane.png';
-      default:
-        return 'assets/logo.png'; // fallback image
-    }
+  String _getCategoryImagePathByIndex(int categoryIndex) {
+    // 0-based index to 1..10 filenames under assets/img/
+    final id = (categoryIndex + 1).clamp(1, 10);
+    return 'assets/img/$id.png';
   }
 }
 
