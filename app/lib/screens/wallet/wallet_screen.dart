@@ -24,6 +24,8 @@ class _WalletScreenState extends State<WalletScreen> {
 
   Future<void> _loadWalletData() async {
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
+    await walletProvider.loadWalletBalance();
+    await walletProvider.fetchWithdrawals();
     await walletProvider.loadTransactions();
   }
 
@@ -78,7 +80,7 @@ class _WalletScreenState extends State<WalletScreen> {
                   // Wallet Balance Card
                   _WalletBalanceCard(
                     balance:
-                        (authProvider.user?['walletBalance'] as num?)
+                        (walletProvider.walletBalance?['walletBalance'] as num?)
                             ?.toDouble() ??
                         0.0,
                     userName: authProvider.user?['userName'] ?? 'User',

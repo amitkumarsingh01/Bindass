@@ -332,6 +332,22 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> getWithdrawals({
+    int limit = 20,
+    int skip = 0,
+  }) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/wallet/withdrawals?limit=$limit&skip=$skip'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to get withdrawals: ${response.body}');
+    }
+  }
+
   Future<Map<String, dynamic>> getPayments() async {
     final userId = _prefs.getString('user_id') ?? 'guest';
     final response = await http.get(

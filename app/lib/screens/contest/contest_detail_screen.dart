@@ -506,23 +506,23 @@ class _CategoryCard extends StatelessWidget {
   String _getCategoryImagePath(String categoryName) {
     switch (categoryName.toLowerCase()) {
       case 'bike':
-        return 'assets/Bike.png';
+        return 'assets/bike.png';
       case 'auto':
         return 'assets/Auto.png';
       case 'car':
-        return 'assets/Car.png';
+        return 'assets/car.png';
       case 'jeep':
-        return 'assets/Jeep.png';
+        return 'assets/jeep.png';
       case 'van':
-        return 'assets/Van.png';
+        return 'assets/van.png';
       case 'bus':
-        return 'assets/Bus.png';
+        return 'assets/bus.png';
       case 'lorry':
-        return 'assets/Lorry.png';
+        return 'assets/lorry.png';
       case 'train':
-        return 'assets/Train.png';
+        return 'assets/train.png';
       case 'helicopter':
-        return 'assets/Helicopter.png';
+        return 'assets/helicopter.png';
       case 'airplane':
         return 'assets/Airplane.png';
       default:
@@ -571,38 +571,145 @@ class _LeaderboardTab extends StatelessWidget {
 
         final adjustedIndex = showCashbackHeader ? index - 1 : index;
         final item = leaderboardData[adjustedIndex];
+        // Build avatar url from profilePicture (absolute when needed)
+        String? _buildPhotoUrl(dynamic val) {
+          final p = (val is String) ? val : (val?['profilePicture']);
+          if (p == null || p.toString().isEmpty) return null;
+          if (p.toString().startsWith('http')) return p.toString();
+          return 'https://server.bindassgrand.com${p.toString()}';
+        }
+
+        final avatarUrl = _buildPhotoUrl(item['profilePicture']);
+        final userName = item['userName'] ?? 'Unknown';
+        final seatNumbers = (item['seatNumbers'] is List)
+            ? (item['seatNumbers'] as List).join(', ')
+            : (item['seatNumbers']?.toString() ?? '');
+
+        final displayRank = adjustedIndex + 1;
         return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: _getRankColor(index + 1),
-              child: Text(
-                '${index + 1}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+          margin: const EdgeInsets.only(bottom: 10),
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200, width: 1),
             ),
-            title: Text(
-              item['userName'] ?? 'Unknown',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text('${item['totalPurchases'] ?? 0} seats purchased'),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  '₹${item['totalAmount']?.toStringAsFixed(0) ?? '0'}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
+                // Avatar + Rank badge
+                Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: const Color(
+                        0xFFdb9822,
+                      ).withOpacity(0.15),
+                      backgroundImage: avatarUrl != null
+                          ? NetworkImage(avatarUrl)
+                          : null,
+                      child: avatarUrl == null
+                          ? Text(
+                              userName.toString().isNotEmpty
+                                  ? userName
+                                        .toString()
+                                        .substring(0, 1)
+                                        .toUpperCase()
+                                  : '?',
+                              style: const TextStyle(
+                                color: Color(0xFFdb9822),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )
+                          : null,
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getRankColor(displayRank),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '$displayRank',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 12),
+                // Name and details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        userName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.event_seat_rounded,
+                            size: 14,
+                            color: Colors.black54,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${item['totalPurchases'] ?? 0} seats',
+                            style: const TextStyle(color: Colors.black54),
+                          ),
+                        ],
+                      ),
+                      if (seatNumbers.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'Seats: $seatNumbers',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-                Text(
-                  '${item['seatNumbers']?.length ?? 0} seats',
-                  style: const TextStyle(fontSize: 12),
+                const SizedBox(width: 8),
+                // Amount box
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.green.withOpacity(0.2)),
+                  ),
+                  child: Text(
+                    '₹${item['totalAmount']?.toStringAsFixed(0) ?? '0'}',
+                    style: const TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -627,17 +734,52 @@ class _WinnersTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (winners == null || winners!['winners'] == null) {
+    final winnersData = (winners?['winners'] as List<dynamic>?) ?? [];
+    final cashbackAmount = winners?['cashbackforhighest'];
+
+    if (winnersData.isEmpty && cashbackAmount == null) {
       return const Center(child: Text('No winners data available'));
     }
 
-    final winnersData = winners!['winners'] as List<dynamic>;
-
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: winnersData.length,
+      itemCount: winnersData.length + 1,
       itemBuilder: (context, index) {
-        final winner = winnersData[index];
+        // First card: Cashback winner section
+        if (index == 0) {
+          if (cashbackAmount == null) {
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              color: Colors.purple.shade50,
+              child: const ListTile(
+                leading: Icon(Icons.local_atm, color: Colors.purple),
+                title: Text(
+                  'Cashback Winners',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text('No cashback winners'),
+              ),
+            );
+          } else {
+            final amount = (cashbackAmount is num)
+                ? cashbackAmount.toStringAsFixed(0)
+                : cashbackAmount.toString();
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              color: Colors.purple.shade50,
+              child: ListTile(
+                leading: const Icon(Icons.local_atm, color: Colors.purple),
+                title: const Text(
+                  'Cashback Winners',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text('₹$amount awarded for highest purchase'),
+              ),
+            );
+          }
+        }
+
+        final winner = winnersData[index - 1];
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           elevation: 4,
@@ -654,7 +796,7 @@ class _WinnersTab extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                // Left side - Rank and Profile Circle
+                // Left side - Rank and Profile avatar
                 Row(
                   children: [
                     // Yellow rank number
@@ -669,32 +811,36 @@ class _WinnersTab extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // Red circle for profile pic (placeholder)
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade100,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.red.shade300,
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.red.withOpacity(0.2),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.person,
-                          color: Colors.red.shade600,
-                          size: 24,
-                        ),
-                      ),
+                    // Avatar (profile picture or fallback)
+                    Builder(
+                      builder: (context) {
+                        String? _buildPhotoUrl(dynamic val) {
+                          final p = (val is String)
+                              ? val
+                              : (val?['profilePicture']);
+                          if (p == null || p.toString().isEmpty) return null;
+                          if (p.toString().startsWith('http'))
+                            return p.toString();
+                          return 'https://server.bindassgrand.com${p.toString()}';
+                        }
+
+                        final avatarUrl = _buildPhotoUrl(
+                          winner['profilePicture'],
+                        );
+                        return CircleAvatar(
+                          radius: 25,
+                          backgroundColor: Colors.red.shade100,
+                          backgroundImage: avatarUrl != null
+                              ? NetworkImage(avatarUrl)
+                              : null,
+                          child: avatarUrl == null
+                              ? const Icon(
+                                  Icons.person,
+                                  color: Color(0xFFdb9822),
+                                )
+                              : null,
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -717,22 +863,13 @@ class _WinnersTab extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFdb9822).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          winner['categoryName'] ?? 'N/A',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFFdb9822),
-                            fontWeight: FontWeight.w600,
-                          ),
+                      // Show phone number (no category icon in winners as requested)
+                      Text(
+                        winner['phoneNumber'] ?? 'N/A',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFdb9822),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -795,37 +932,22 @@ class _WinnersTab extends StatelessWidget {
                         ),
                       ),
                     ),
+                    // Optional category label under seat (as requested category like bike/car)
                     const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
+                    if ((winner['categoryName'] ?? '').toString().isNotEmpty)
+                      Row(
+                        children: [
+                          Text(
+                            winner['categoryName'],
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFFdb9822),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
                       ),
-                      decoration: BoxDecoration(
-                        color: winner['isPrizeClaimed'] == true
-                            ? Colors.green.shade50
-                            : Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: winner['isPrizeClaimed'] == true
-                              ? Colors.green.shade300
-                              : Colors.orange.shade300,
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        winner['isPrizeClaimed'] == true
-                            ? '✓ Claimed'
-                            : '⏳ Pending',
-                        style: TextStyle(
-                          color: winner['isPrizeClaimed'] == true
-                              ? Colors.green.shade700
-                              : Colors.orange.shade700,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ],

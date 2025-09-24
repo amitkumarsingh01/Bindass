@@ -62,6 +62,9 @@ class LotteryDraw:
             # Credit prizes to winners' wallets
             await self._credit_prizes(winners)
             
+            # Credit cashback for highest purchase if configured on contest
+            await self._credit_cashback_highest_purchase(contest)
+            
             # Create winner records
             await self._create_winner_records(winners)
             
@@ -204,6 +207,66 @@ class LotteryDraw:
         
         if winner_records:
             await self.database.winners.insert_many(winner_records)
+
+    async def _credit_cashback_highest_purchase(self, contest: Dict):
+        """Credit cashback amount to the user with highest total purchase for this contest.
+        Uses contest['cashbackforhighest'] (float). Idempotent via wallet_transactions.referenceId.
+        """
+        try:
+            cashback_amount = float(contest.get("cashbackforhighest") or 0)
+            if cashback_amount <= 0:
+                return
+
+            # Idempotency check
+            existing = await self.database.wallet_transactions.find_one({
+                "referenceId": f"CASHBACK_{str(self.contest_id)}",
+                "category": "cashback"
+            })
+            if existing:
+                return
+
+            # Find highest purchaser by total amount
+            pipeline = [
+                {"$match": {"contestId": self.contest_id, "status": "purchased"}},
+                {"$group": {"_id": "$userId", "totalAmount": {"$sum": "$ticketPrice"}, "totalSeats": {"$sum": 1}}},
+                {"$sort": {"totalAmount": -1}},
+                {"$limit": 1}
+            ]
+            top = None
+            async for row in self.database.purchased_seats.aggregate(pipeline):
+                top = row
+                break
+            if not top:
+                return
+
+            user_id = top["_id"]
+            user = await self.database.users.find_one({"_id": user_id})
+            if not user:
+                return
+
+            previous_balance = float(user.get("walletBalance", 0) or 0)
+            new_balance = previous_balance + cashback_amount
+
+            # Update wallet
+            await self.database.users.update_one({"_id": user_id}, {"$set": {"walletBalance": new_balance}})
+
+            # Insert wallet transaction
+            wallet_txn = {
+                "userId": user_id,
+                "transactionId": f"CASHBACK_{int(datetime.now().timestamp())}",
+                "transactionType": "credit",
+                "amount": cashback_amount,
+                "description": "Cashback for highest purchase",
+                "category": "cashback",
+                "balanceBefore": previous_balance,
+                "balanceAfter": new_balance,
+                "status": "completed",
+                "referenceId": f"CASHBACK_{str(self.contest_id)}",
+                "createdAt": datetime.now()
+            }
+            await self.database.wallet_transactions.insert_one(wallet_txn)
+        except Exception as e:
+            logger.error(f"Error crediting cashback for highest purchase: {e}")
     
     async def _send_winner_notifications(self, winners: List[Dict]):
         """Send notifications to winners"""

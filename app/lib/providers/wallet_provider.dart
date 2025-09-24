@@ -222,12 +222,24 @@ class WalletProvider with ChangeNotifier {
     _clearError();
 
     try {
-      await _apiService!.requestWithdrawal(
+      final res = await _apiService!.requestWithdrawal(
         amount,
         bankDetailsId,
         withdrawalMethod,
       );
+      // Immediately reflect debited balance on UI without waiting for a full reload
+      if (_walletBalance != null) {
+        final current = (_walletBalance!['walletBalance'] as num? ?? 0)
+            .toDouble();
+        _walletBalance!['walletBalance'] = (current - amount).clamp(
+          0,
+          double.infinity,
+        );
+        notifyListeners();
+      }
+      // Refresh both wallet and withdrawals list so UI reflects status and balance
       await loadWalletBalance();
+      await fetchWithdrawals();
       await loadTransactions();
       return true;
     } catch (e) {
@@ -235,6 +247,18 @@ class WalletProvider with ChangeNotifier {
       return false;
     } finally {
       _setLoading(false);
+    }
+  }
+
+  Future<void> fetchWithdrawals() async {
+    if (_apiService == null) return;
+
+    try {
+      final res = await _apiService!.getWithdrawals();
+      _withdrawals = res['withdrawals'] ?? [];
+      notifyListeners();
+    } catch (_) {
+      // ignore network errors silently for this refresh call
     }
   }
 
