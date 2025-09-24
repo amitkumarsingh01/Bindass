@@ -269,6 +269,19 @@ async def get_all_withdrawals(
                 
                 withdrawal["id"] = str(withdrawal["_id"])
                 del withdrawal["_id"]
+                # Normalize non-JSON types
+                if isinstance(withdrawal.get("userId"), ObjectId):
+                    withdrawal["userId"] = str(withdrawal["userId"])
+                if isinstance(withdrawal.get("bankDetailsId"), ObjectId):
+                    withdrawal["bankDetailsId"] = str(withdrawal["bankDetailsId"])
+                # Ensure enums are serialized to string values
+                if isinstance(withdrawal.get("status"), WithdrawalStatus):
+                    withdrawal["status"] = withdrawal["status"].value
+                if isinstance(withdrawal.get("withdrawalMethod"), str) is False and withdrawal.get("withdrawalMethod") is not None:
+                    try:
+                        withdrawal["withdrawalMethod"] = str(withdrawal["withdrawalMethod"])  # .value if Enum
+                    except Exception:
+                        pass
                 withdrawal["user"] = {
                     "userId": user["userId"] if user else "N/A",
                     "userName": user["userName"] if user else "N/A",
