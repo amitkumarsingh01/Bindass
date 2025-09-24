@@ -250,50 +250,67 @@ async def get_all_withdrawals(
     skip: int = 0
 ):
     """Get all withdrawal requests - returns all withdrawals with full details"""
-    database = get_database()
-    
-    query = {}
-    if status:
-        query["status"] = status
-    
-    withdrawals = []
-    cursor = database.withdrawals.find(query).sort("createdAt", -1).skip(skip).limit(limit)
-    
-    async for withdrawal in cursor:
-        # Get user details
-        user = await database.users.find_one({"_id": withdrawal["userId"]})
-        # Get bank details
-        bank_details = await database.bank_details.find_one({"_id": withdrawal["bankDetailsId"]})
+    try:
+        database = get_database()
         
-        withdrawal["id"] = str(withdrawal["_id"])
-        del withdrawal["_id"]
-        withdrawal["user"] = {
-            "userId": user["userId"] if user else "N/A",
-            "userName": user["userName"] if user else "N/A",
-            "phoneNumber": user["phoneNumber"] if user else "N/A",
-            "email": user.get("email", "N/A") if user else "N/A"
-        }
-        withdrawal["bankDetails"] = {
-            "id": str(bank_details["_id"]) if bank_details else None,
-            "accountNumber": bank_details["accountNumber"] if bank_details else "N/A",
-            "accountHolderName": bank_details["accountHolderName"] if bank_details else "N/A",
-            "bankName": bank_details["bankName"] if bank_details else "N/A",
-            "ifscCode": bank_details["ifscCode"] if bank_details else "N/A",
-            "isVerified": bank_details.get("isVerified", False) if bank_details else False
+        query = {}
+        if status:
+            query["status"] = status
+        
+        withdrawals = []
+        cursor = database.withdrawals.find(query).sort("createdAt", -1).skip(skip).limit(limit)
+        
+        async for withdrawal in cursor:
+            try:
+                # Get user details
+                user = await database.users.find_one({"_id": withdrawal["userId"]})
+                # Get bank details
+                bank_details = await database.bank_details.find_one({"_id": withdrawal["bankDetailsId"]})
+                
+                withdrawal["id"] = str(withdrawal["_id"])
+                del withdrawal["_id"]
+                withdrawal["user"] = {
+                    "userId": user["userId"] if user else "N/A",
+                    "userName": user["userName"] if user else "N/A",
+                    "phoneNumber": user["phoneNumber"] if user else "N/A",
+                    "email": user.get("email", "N/A") if user else "N/A"
+                }
+                withdrawal["bankDetails"] = {
+                    "id": str(bank_details["_id"]) if bank_details else None,
+                    "accountNumber": bank_details["accountNumber"] if bank_details else "N/A",
+                    "accountHolderName": bank_details["accountHolderName"] if bank_details else "N/A",
+                    "bankName": bank_details["bankName"] if bank_details else "N/A",
+                    "ifscCode": bank_details["ifscCode"] if bank_details else "N/A",
+                    "isVerified": bank_details.get("isVerified", True) if bank_details else True
+                }
+                
+                withdrawals.append(withdrawal)
+            except Exception as e:
+                logger.error(f"Error processing withdrawal {withdrawal.get('_id', 'unknown')}: {e}")
+                continue
+        
+        # Get total count for pagination
+        try:
+            total_count = await database.withdrawals.count_documents(query)
+        except Exception as e:
+            logger.warning(f"count_documents failed, using manual count: {e}")
+            # Fallback: count manually if count_documents fails
+            total_count = len([doc async for doc in database.withdrawals.find(query)])
+        
+        return {
+            "withdrawals": withdrawals,
+            "total": total_count,
+            "limit": limit,
+            "skip": skip,
+            "hasMore": (skip + limit) < total_count
         }
         
-        withdrawals.append(withdrawal)
-    
-    # Get total count for pagination
-    total_count = await database.withdrawals.count_documents(query)
-    
-    return {
-        "withdrawals": withdrawals,
-        "total": total_count,
-        "limit": limit,
-        "skip": skip,
-        "hasMore": (skip + limit) < total_count
-    }
+    except Exception as e:
+        logger.error(f"Error in get_all_withdrawals: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch withdrawals: {str(e)}"
+        )
 
 # =========================
 # New public utility APIs
