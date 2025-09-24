@@ -130,6 +130,46 @@ async def test_razorpay_connection():
             "key_id": simple_razorpay.key_id
         }
 
+@router.get("/debug/{order_id}")
+async def debug_payment_status(order_id: str):
+    """Debug payment status and wallet credit"""
+    try:
+        database = get_database()
+        
+        # Get payment record
+        payment = await database.simple_payments.find_one({"order_id": order_id})
+        if not payment:
+            return {"error": "Payment not found"}
+        
+        # Get user info
+        user = await database.users.find_one({"_id": payment["user_id"]})
+        user_info = {
+            "id": str(user["_id"]) if user else None,
+            "email": user.get("email") if user else None,
+            "wallet_balance": user.get("walletBalance", 0) if user else None
+        }
+        
+        # Get wallet transactions
+        wallet_txns = []
+        async for txn in database.wallet_transactions.find({"userId": payment["user_id"]}).sort("createdAt", -1).limit(5):
+            txn["_id"] = str(txn["_id"])
+            wallet_txns.append(txn)
+        
+        return {
+            "payment": {
+                "order_id": payment["order_id"],
+                "status": payment["status"],
+                "amount": payment["amount"],
+                "user_id": payment["user_id"],
+                "created_at": payment["created_at"]
+            },
+            "user": user_info,
+            "recent_wallet_transactions": wallet_txns
+        }
+        
+    except Exception as e:
+        return {"error": str(e)}
+
 @router.post("/create", response_model=SimplePaymentResponse)
 async def create_simple_payment(
     user_id: str = Query(..., description="User ID"),
@@ -263,7 +303,12 @@ async def get_simple_payment_status(order_id: str):
         
         # If successful, credit wallet
         if status_value == "SUCCESS" and payment.get("status") != "SUCCESS":
+            logger.info(f"Payment successful, crediting wallet for order {order_id}")
             await credit_user_wallet(payment)
+        elif status_value == "SUCCESS" and payment.get("status") == "SUCCESS":
+            logger.info(f"Payment already processed for order {order_id}")
+        else:
+            logger.info(f"Payment not successful yet for order {order_id}, status: {status_value}")
         
         return SimplePaymentStatus(
             order_id=order_id,
@@ -288,14 +333,21 @@ async def credit_user_wallet(payment: dict):
         user_id = payment["user_id"]
         amount = payment["amount"]
         
+        logger.info(f"Starting wallet credit for user {user_id}, amount {amount}")
+        
         # Get user
         user = await database.users.find_one({"_id": user_id})
         if not user:
+            logger.error(f"User not found: {user_id}")
             return
+        
+        logger.info(f"User found: {user.get('email', 'no email')}")
         
         # Update wallet balance
         current_balance = user.get("walletBalance", 0.0)
         new_balance = float(current_balance) + float(amount)
+        
+        logger.info(f"Updating balance: {current_balance} -> {new_balance}")
         
         await database.users.update_one(
             {"_id": user_id},
@@ -316,8 +368,11 @@ async def credit_user_wallet(payment: dict):
             "createdAt": datetime.now()
         }
         
-        await database.wallet_transactions.insert_one(wallet_transaction)
-        logger.info(f"Credited {amount} to user {user_id} for order {payment['order_id']}")
+        result = await database.wallet_transactions.insert_one(wallet_transaction)
+        logger.info(f"Wallet transaction created with ID: {result.inserted_id}")
+        logger.info(f"Successfully credited {amount} to user {user_id} for order {payment['order_id']}")
         
     except Exception as e:
         logger.error(f"Error crediting wallet: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
