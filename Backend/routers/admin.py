@@ -948,3 +948,97 @@ async def delete_all_users(confirm: str = None):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete users: {str(e)}"
         )
+
+@router.put("/users/reset-all-balances")
+async def reset_all_user_balances(confirm: str = None):
+    """Reset all user wallet balances to 0.
+    
+    This is a dangerous operation that will reset all user wallet balances to zero.
+    Requires confirmation parameter with value 'RESET_ALL_BALANCES' to proceed.
+    
+    This operation will:
+    - Set walletBalance to 0 for all users
+    - Create wallet transaction records for audit trail
+    - Update user records with current timestamp
+    """
+    database = get_database()
+    
+    # Safety check - require explicit confirmation
+    if confirm != "RESET_ALL_BALANCES":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This operation requires confirmation. Pass 'confirm=RESET_ALL_BALANCES' to proceed."
+        )
+    
+    try:
+        # Get all users with non-zero balances
+        users_with_balance = []
+        cursor = database.users.find({"walletBalance": {"$gt": 0}})
+        async for user in cursor:
+            users_with_balance.append({
+                "userId": user["_id"],
+                "currentBalance": user.get("walletBalance", 0),
+                "userIdString": user.get("userId", "unknown"),
+                "userName": user.get("userName", "unknown")
+            })
+        
+        if not users_with_balance:
+            return {
+                "message": "No users found with non-zero balances",
+                "usersUpdated": 0,
+                "transactionsCreated": 0
+            }
+        
+        # Create wallet transaction records for audit trail
+        transaction_records = []
+        for user_data in users_with_balance:
+            if user_data["currentBalance"] > 0:
+                transaction_record = {
+                    "userId": user_data["userId"],
+                    "transactionId": f"ADMIN_RESET_{int(datetime.now().timestamp())}_{str(user_data['userId'])}",
+                    "transactionType": "debit",
+                    "amount": user_data["currentBalance"],
+                    "description": "Admin: Balance reset to zero",
+                    "category": "admin_action",
+                    "balanceBefore": user_data["currentBalance"],
+                    "balanceAfter": 0.0,
+                    "status": "completed",
+                    "referenceId": "admin_balance_reset",
+                    "createdAt": datetime.now()
+                }
+                transaction_records.append(transaction_record)
+        
+        # Insert transaction records if any
+        transactions_created = 0
+        if transaction_records:
+            await database.wallet_transactions.insert_many(transaction_records)
+            transactions_created = len(transaction_records)
+        
+        # Reset all user balances to 0
+        result = await database.users.update_many(
+            {},  # Update all users
+            {
+                "$set": {
+                    "walletBalance": 0.0,
+                    "updatedAt": datetime.now()
+                }
+            }
+        )
+        
+        logger.info(f"Admin operation: Reset wallet balances for {result.modified_count} users, created {transactions_created} transaction records")
+        
+        return {
+            "message": f"Successfully reset wallet balances for all users",
+            "usersUpdated": result.modified_count,
+            "usersWithPreviousBalance": len(users_with_balance),
+            "transactionsCreated": transactions_created,
+            "totalAmountReset": sum(user["currentBalance"] for user in users_with_balance),
+            "warning": "This action cannot be undone"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error resetting all user balances: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to reset user balances: {str(e)}"
+        )
