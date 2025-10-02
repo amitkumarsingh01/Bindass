@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 import logging
 from database import connect_to_mongo, close_mongo_connection, get_database
@@ -142,6 +143,11 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "message": "API is running"}
+
+@app.get("/reset-password")
+async def serve_reset_password_page():
+    """Serve the password reset page"""
+    return FileResponse("static/pages/reset-password.html")
 
 if __name__ == "__main__":
     import uvicorn

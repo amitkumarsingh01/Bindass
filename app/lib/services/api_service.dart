@@ -514,6 +514,21 @@ class ApiService {
     }
   }
 
+  // Forgot Password endpoints
+  Future<Map<String, dynamic>> forgotPassword(String email) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/forgot-password'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to send reset email: ${response.body}');
+    }
+  }
+
   // Logout
   Future<void> logout() async {
     await _prefs.remove('access_token');

@@ -898,3 +898,53 @@ async def get_admin_dashboard():
             "totalDistributed": total_prize_money
         }
     }
+
+@router.delete("/users/delete-all")
+async def delete_all_users(confirm: str = None):
+    """Delete all users from the database.
+    
+    This is a dangerous operation that will permanently delete all user data.
+    Requires confirmation parameter with value 'DELETE_ALL_USERS' to proceed.
+    
+    Only deletes users - does not affect contests, transactions, or other data.
+    """
+    database = get_database()
+    
+    # Safety check - require explicit confirmation
+    if confirm != "DELETE_ALL_USERS":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This operation requires confirmation. Pass 'confirm=DELETE_ALL_USERS' to proceed."
+        )
+    
+    try:
+        # Count users before deletion
+        user_count = await database.users.count_documents({})
+        
+        if user_count == 0:
+            return {
+                "message": "No users found to delete",
+                "deletedCount": 0
+            }
+        
+        # Delete all users
+        result = await database.users.delete_many({})
+        
+        # Also delete associated bank details for all users
+        bank_details_result = await database.bank_details.delete_many({})
+        
+        logger.info(f"Admin operation: Deleted all {result.deleted_count} users and {bank_details_result.deleted_count} bank details")
+        
+        return {
+            "message": f"Successfully deleted all users from the database",
+            "deletedCount": result.deleted_count,
+            "bankDetailsDeleted": bank_details_result.deleted_count,
+            "warning": "This action cannot be undone"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error deleting all users: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete users: {str(e)}"
+        )

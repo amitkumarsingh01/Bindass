@@ -1,9 +1,11 @@
 from fastapi import APIRouter, HTTPException, Depends, status
-from datetime import timedelta
+from datetime import timedelta, datetime
 from models import UserCreate, UserLogin, UserResponse, Token, User, UserRegisterSimple
 from auth import authenticate_user, create_access_token, get_password_hash, get_current_user
 from database import get_database
 from config import settings
+from services.email_service import EmailService
+from pydantic import BaseModel, EmailStr
 import logging
 
 logger = logging.getLogger(__name__)
@@ -133,3 +135,133 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
     user_dict["id"] = str(user_dict["id"])
     del user_dict["password"]
     return UserResponse(**user_dict)
+
+# Forgot Password Models
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+    confirm_password: str
+
+@router.post("/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest):
+    """Send password reset email to user"""
+    try:
+        database = get_database()
+        
+        # Normalize email
+        email = request.email.lower().strip()
+        
+        # Check if user exists
+        user = await database.users.find_one({"email": email})
+        if not user:
+            # Don't reveal if email exists or not for security
+            return {
+                "message": "If an account with this email exists, you will receive a password reset link shortly.",
+                "success": True
+            }
+        
+        # Send reset email
+        success = await EmailService.send_password_reset_email(email)
+        
+        if success:
+            return {
+                "message": "If an account with this email exists, you will receive a password reset link shortly.",
+                "success": True
+            }
+        else:
+            # Don't reveal email sending failure for security
+            return {
+                "message": "If an account with this email exists, you will receive a password reset link shortly.",
+                "success": True
+            }
+            
+    except Exception as e:
+        logger.error(f"Error in forgot password: {e}")
+        # Don't reveal internal errors
+        return {
+            "message": "If an account with this email exists, you will receive a password reset link shortly.",
+            "success": True
+        }
+
+@router.post("/reset-password")
+async def reset_password(request: ResetPasswordRequest):
+    """Reset user password using token"""
+    try:
+        # Validate passwords match
+        if request.new_password != request.confirm_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Passwords do not match"
+            )
+        
+        # Validate password length (minimum 6 characters)
+        if len(request.new_password) < 6:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must be at least 6 characters long"
+            )
+        
+        # Verify token
+        try:
+            user_info = await EmailService.verify_reset_token(request.token)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e)
+            )
+        
+        # Update password
+        database = get_database()
+        hashed_password = get_password_hash(request.new_password)
+        
+        from bson import ObjectId
+        result = await database.users.update_one(
+            {"_id": ObjectId(user_info["userId"])},
+            {
+                "$set": {
+                    "password": hashed_password,
+                    "updatedAt": datetime.now()
+                }
+            }
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update password"
+            )
+        
+        # Mark token as used
+        await EmailService.use_reset_token(request.token)
+        
+        logger.info(f"Password reset successful for user: {user_info['email']}")
+        
+        return {
+            "message": "Password reset successful. You can now login with your new password.",
+            "success": True
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in reset password: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while resetting password"
+        )
+
+@router.get("/verify-reset-token/{token}")
+async def verify_reset_token(token: str):
+    """Verify if a reset token is valid (for frontend validation)"""
+    try:
+        user_info = await EmailService.verify_reset_token(token)
+        return {
+            "valid": True,
+            "email": user_info["email"],
+            "userName": user_info["userName"]
+        }
+    except ValueError:
+        return {"valid": False}

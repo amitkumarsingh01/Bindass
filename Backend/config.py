@@ -16,6 +16,14 @@ class Settings(BaseSettings):
     razorpay_api_base: str = "https://api.razorpay.com/v1"
     razorpay_return_url: str = "https://yourdomain.com/api/payment/return"
     
+    # Email Configuration for forgot password
+    smtp_server: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_username: str = "bindassgrand@gmail.com"  # Replace with your email
+    smtp_password: str = "bjtbkadanltetlpa"     # Replace with your app password
+    from_email: str = "bindassgrand@gmail.com"     # Replace with your email
+    frontend_url: str = "https://server.bindassgrand.com"  # Replace with your frontend URL
+    
     class Config:
         env_file = ".env"
 

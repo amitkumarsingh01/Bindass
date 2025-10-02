@@ -103,6 +103,21 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<bool> forgotPassword(String email) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      await _apiService.forgotPassword(email);
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   Future<bool> updateProfile(Map<String, dynamic> profileData) async {
     _setLoading(true);
     _clearError();
