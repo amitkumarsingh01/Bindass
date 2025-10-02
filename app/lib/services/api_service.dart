@@ -265,7 +265,11 @@ class ApiService {
     String description,
   ) async {
     // Use fresh simple payments API
-    final userId = _prefs.getString('user_id') ?? 'guest';
+    final rawUserId = _prefs.getString('user_id') ?? 'guest';
+    // Extract part before @ if email is used as user_id
+    final userId = rawUserId.contains('@') 
+        ? rawUserId.split('@')[0] 
+        : rawUserId;
     // 🧾 Log request
     // ignore: avoid_print
     print(

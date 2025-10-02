@@ -32,7 +32,7 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
     if (_formKey.currentState!.validate()) {
       final amount = double.parse(_amountController.text);
       final description = _descriptionController.text.trim().isEmpty
-          ? 'Wallet top-up'
+          ? 'Ok'
           : _descriptionController.text.trim();
 
       final walletProvider = Provider.of<WalletProvider>(
