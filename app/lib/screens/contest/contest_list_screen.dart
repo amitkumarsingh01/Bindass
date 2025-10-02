@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/contest_provider.dart';
+import '../../utils/number_formatter.dart';
 import 'contest_detail_screen.dart';
 
 class ContestListScreen extends StatefulWidget {
@@ -188,7 +189,7 @@ class _ContestCard extends StatelessWidget {
                             children: [
                               // Prize Amount
                               Text(
-                                'Win ₹ ${contest['totalPrizeMoney']?.toStringAsFixed(0) ?? '0'}',
+                                'Win ${NumberFormatter.formatCurrency(contest['totalPrizeMoney'])}',
                                 style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,
@@ -249,8 +250,8 @@ class _ContestCard extends StatelessWidget {
                                   Expanded(
                                     child: Text(
                                       contest['cashbackforhighest'] != null
-                                          ? 'Cashback for highest purchase ₹ ${(contest['cashbackforhighest'] as num).toStringAsFixed(0)}'
-                                          : 'Highest number purchase person ₹ ${contest['ticketPrice']?.toStringAsFixed(0) ?? '0'}/-',
+                                          ? 'Cashback for highest purchase ${NumberFormatter.formatCurrency(contest['cashbackforhighest'])}'
+                                          : 'Highest number purchase person ${NumberFormatter.formatCurrency(contest['ticketPrice'])}/-',
                                       style: const TextStyle(
                                         fontSize: 13,
                                         color: Colors.white,
@@ -326,7 +327,7 @@ class _ContestCard extends StatelessWidget {
 
                               // Ticket Price Amount
                               Text(
-                                '₹ ${contest['ticketPrice']?.toStringAsFixed(0) ?? '0'}',
+                                NumberFormatter.formatCurrency(contest['ticketPrice']),
                                 style: const TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,

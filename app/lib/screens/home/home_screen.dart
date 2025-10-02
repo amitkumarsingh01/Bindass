@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/contest_provider.dart';
 import '../../providers/wallet_provider.dart';
 import '../../providers/home_slider_provider.dart';
+import '../../utils/number_formatter.dart';
 import '../../controllers/app_drawer_controller.dart';
 import '../app_drawer_screen.dart';
 import '../contest/contest_list_screen.dart';
@@ -1307,7 +1308,7 @@ class _ContestCardState extends State<_ContestCard>
                                       ),
                                     ),
                                     Text(
-                                      '₹${widget.contest['totalPrizeMoney']?.toStringAsFixed(0) ?? '0'}',
+                                      NumberFormatter.formatCurrency(widget.contest['totalPrizeMoney']),
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w800,
@@ -1350,7 +1351,7 @@ class _ContestCardState extends State<_ContestCard>
                                       ),
                                     ),
                                     Text(
-                                      '₹${widget.contest['ticketPrice']?.toStringAsFixed(0) ?? '0'}',
+                                      NumberFormatter.formatCurrency(widget.contest['ticketPrice']),
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w700,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/wallet_provider.dart';
+import '../../utils/number_formatter.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
   const TransactionHistoryScreen({super.key});
@@ -259,7 +260,7 @@ class _TransactionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              '$amountPrefix₹${amount.toStringAsFixed(2)}',
+              '$amountPrefix${NumberFormatter.formatCurrency(amount)}',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: isCredit ? Colors.green : const Color(0xFFdb9822),
@@ -311,7 +312,7 @@ class _TransactionCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '₹${((transaction['balanceBefore'] as num?)?.toDouble() ?? 0.0).toStringAsFixed(2)}',
+                      NumberFormatter.formatCurrency((transaction['balanceBefore'] as num?)?.toDouble() ?? 0.0),
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
@@ -331,7 +332,7 @@ class _TransactionCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '₹${balanceAfter.toStringAsFixed(2)}',
+                      NumberFormatter.formatCurrency(balanceAfter),
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Color(0xFFdb9822),

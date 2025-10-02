@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/wallet_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/number_formatter.dart';
 import 'add_money_screen.dart';
 import 'withdrawal_screen.dart';
 import 'transaction_history_screen.dart';
@@ -253,7 +254,7 @@ class _WalletBalanceCard extends StatelessWidget {
             ),
           ),
           Text(
-            '₹${balance.toStringAsFixed(2)}',
+            NumberFormatter.formatCurrency(balance),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 36,
@@ -366,7 +367,7 @@ class _TransactionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              '$amountPrefix₹${amount.toStringAsFixed(2)}',
+              '$amountPrefix${NumberFormatter.formatCurrency(amount)}',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: amountColor,

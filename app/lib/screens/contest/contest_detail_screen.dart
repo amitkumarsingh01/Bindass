@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/contest_provider.dart';
+import '../../utils/number_formatter.dart';
 import 'seat_selection_screen.dart';
 
 class ContestDetailScreen extends StatefulWidget {
@@ -191,8 +192,7 @@ class _DetailsTab extends StatelessWidget {
                   _InfoRow(
                     icon: Icons.attach_money,
                     label: 'Total Prize Money',
-                    value:
-                        '₹${contest['totalPrizeMoney']?.toStringAsFixed(0) ?? '0'}',
+                    value: NumberFormatter.formatCurrency(contest['totalPrizeMoney']),
                     valueColor: Colors.green,
                   ),
 
@@ -200,8 +200,7 @@ class _DetailsTab extends StatelessWidget {
                   _InfoRow(
                     icon: Icons.confirmation_number,
                     label: 'Ticket Price',
-                    value:
-                        '₹${contest['ticketPrice']?.toStringAsFixed(0) ?? '0'}',
+                    value: NumberFormatter.formatCurrency(contest['ticketPrice']),
                     valueColor: Colors.orange,
                   ),
 
@@ -234,8 +233,7 @@ class _DetailsTab extends StatelessWidget {
                     _InfoRow(
                       icon: Icons.trending_up,
                       label: 'Cashback for Highest Purchase',
-                      value:
-                          '₹${(contest['cashbackforhighest'] as num).toStringAsFixed(0)}',
+                      value: NumberFormatter.formatCurrency(contest['cashbackforhighest']),
                       valueColor: Colors.purple,
                     ),
 
@@ -546,9 +544,6 @@ class _LeaderboardTab extends StatelessWidget {
       itemCount: leaderboardData.length + (showCashbackHeader ? 1 : 0),
       itemBuilder: (context, index) {
         if (showCashbackHeader && index == 0) {
-          final amount = (cashbackforhighest is num)
-              ? (cashbackforhighest as num).toStringAsFixed(0)
-              : cashbackforhighest.toString();
           return Card(
             margin: const EdgeInsets.only(bottom: 12),
             color: Colors.purple.shade50,
@@ -558,7 +553,7 @@ class _LeaderboardTab extends StatelessWidget {
                 'Cashback for Highest Purchase',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              subtitle: Text('₹$amount will be awarded'),
+              subtitle: Text('${NumberFormatter.formatCurrency(cashbackforhighest)} will be awarded'),
             ),
           );
         }
@@ -698,7 +693,7 @@ class _LeaderboardTab extends StatelessWidget {
                     border: Border.all(color: Colors.green.withOpacity(0.2)),
                   ),
                   child: Text(
-                    '₹${item['totalAmount']?.toStringAsFixed(0) ?? '0'}',
+                    NumberFormatter.formatCurrency(item['totalAmount']),
                     style: const TextStyle(
                       color: Colors.green,
                       fontWeight: FontWeight.bold,
@@ -755,9 +750,6 @@ class _WinnersTab extends StatelessWidget {
               ),
             );
           } else {
-            final amount = (cashbackAmount is num)
-                ? cashbackAmount.toStringAsFixed(0)
-                : cashbackAmount.toString();
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
               color: Colors.purple.shade50,
@@ -767,7 +759,7 @@ class _WinnersTab extends StatelessWidget {
                   'Cashback Winners',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                subtitle: Text('₹$amount awarded for highest purchase'),
+                subtitle: Text('${NumberFormatter.formatCurrency(cashbackAmount)} awarded for highest purchase'),
               ),
             );
           }
@@ -895,7 +887,7 @@ class _WinnersTab extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      '₹${winner['prizeAmount']?.toStringAsFixed(0) ?? '0'}',
+                      NumberFormatter.formatCurrency(winner['prizeAmount']),
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         color: Colors.black87,
@@ -1045,7 +1037,7 @@ class _PrizeListTab extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '₹${prize['prizeAmount']?.toStringAsFixed(0) ?? '0'}',
+                            NumberFormatter.formatCurrency(prize['prizeAmount']),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 24,
@@ -1240,7 +1232,7 @@ class _MyPurchasesTab extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    'Amount: ₹${(group['totalAmount'] ?? 0).toString()}',
+                    'Amount: ${NumberFormatter.formatCurrency(group['totalAmount'])}',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.green,

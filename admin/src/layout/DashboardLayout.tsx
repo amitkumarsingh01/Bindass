@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 
 const nav = [
@@ -13,6 +13,29 @@ const nav = [
 
 export default function DashboardLayout() {
   const navigate = useNavigate()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // Close sidebar when clicking outside on mobile and handle keyboard
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(false)
+      }
+    }
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && sidebarOpen) {
+        setSidebarOpen(false)
+      }
+    }
+    
+    window.addEventListener('resize', handleResize)
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [sidebarOpen])
 
   const logout = () => {
     localStorage.removeItem('admin_authed')
@@ -20,10 +43,26 @@ export default function DashboardLayout() {
     navigate('/login', { replace: true })
   }
 
+  const closeSidebar = () => setSidebarOpen(false)
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="grid grid-cols-[280px_1fr] min-h-screen">
-        <aside className="bg-white shadow-2xl border-r border-gray-200">
+      <div className="lg:grid lg:grid-cols-[280px_1fr] min-h-screen relative">
+        {/* Mobile Overlay */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={closeSidebar}
+          />
+        )}
+        
+        {/* Sidebar */}
+        <aside className={`
+          bg-white shadow-2xl border-r border-gray-200 
+          fixed lg:static inset-y-0 left-0 z-50 w-80 lg:w-auto
+          transform transition-transform duration-300 ease-in-out lg:transform-none
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}>
           <div className="p-6">
             <Link to="/" className="flex items-center gap-3 mb-8 group">
               <div className="w-12 h-12 bg-gradient-to-br from-primary to-yellow-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
@@ -43,6 +82,7 @@ export default function DashboardLayout() {
                   key={n.to}
                   to={n.to}
                   end={n.to === '/'}
+                  onClick={closeSidebar}
                   className={({ isActive }) => 
                     `group flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-200 ${
                       isActive 
@@ -76,9 +116,9 @@ export default function DashboardLayout() {
           </div>
         </aside>
         
-        <main className="overflow-auto">
-          <div className="p-8">
-            <TopBar />
+        <main className="overflow-auto lg:ml-0">
+          <div className="p-4 lg:p-8">
+            <TopBar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
             <div className="mt-6">
               <Outlet />
             </div>
@@ -89,7 +129,7 @@ export default function DashboardLayout() {
   )
 }
 
-function TopBar() {
+function TopBar({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean, setSidebarOpen: (open: boolean) => void }) {
   const [val, setVal] = useState(localStorage.getItem('admin_userId') || 'admin')
   const [showImpersonate] = useState(false)
   
@@ -101,7 +141,21 @@ function TopBar() {
   return (
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-4">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+        {/* Mobile Hamburger Menu */}
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="lg:hidden p-2 rounded-xl bg-white shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-200"
+          aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={sidebarOpen}
+        >
+          <div className="w-6 h-6 flex flex-col justify-center items-center">
+            <span className={`block h-0.5 w-6 bg-gray-600 transition-all duration-300 ${sidebarOpen ? 'rotate-45 translate-y-1' : ''}`}></span>
+            <span className={`block h-0.5 w-6 bg-gray-600 transition-all duration-300 my-1 ${sidebarOpen ? 'opacity-0' : ''}`}></span>
+            <span className={`block h-0.5 w-6 bg-gray-600 transition-all duration-300 ${sidebarOpen ? '-rotate-45 -translate-y-1' : ''}`}></span>
+          </div>
+        </button>
+        
+        <h2 className="text-xl lg:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
           Welcome Back! 👋
         </h2>
         <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">

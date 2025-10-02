@@ -16,7 +16,7 @@ export default function Login() {
       if (!(username && password)) throw new Error('Enter username and password')
 
       // Hardcoded admin credentials
-      if (username === 'admin' && password === 'admin123#') {
+      if (username === 'admin' || username === 'bindassgrand@gmail.com' && password === 'admin123#' || password === 'Bindass@2025#') {
         localStorage.setItem('admin_userId', username)
         localStorage.setItem('admin_authed', 'true')
         navigate('/', { replace: true })
