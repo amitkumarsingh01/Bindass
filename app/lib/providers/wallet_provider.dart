@@ -104,9 +104,22 @@ class WalletProvider with ChangeNotifier {
         print(
           '🎉  Razorpay SUCCESS: paymentId=${response.paymentId} orderId=${response.orderId} signature=${response.signature}',
         );
-        // Start polling to confirm payment and credit wallet
-        final ok = await _pollPaymentStatus(orderId);
-        completer.complete(ok);
+        
+        // CRITICAL: Always poll backend to verify actual payment status
+        // Don't trust Razorpay success alone - backend must confirm
+        // ignore: avoid_print
+        print('🔄  Polling backend to verify payment status...');
+        final backendVerified = await _pollPaymentStatus(orderId);
+        
+        if (backendVerified) {
+          // ignore: avoid_print
+          print('✅  Backend confirms payment SUCCESS');
+          completer.complete(true);
+        } else {
+          // ignore: avoid_print
+          print('❌  Backend says payment FAILED despite Razorpay success');
+          completer.complete(false);
+        }
       });
 
       _razorpay!.on(Razorpay.EVENT_PAYMENT_ERROR, (
@@ -116,9 +129,14 @@ class WalletProvider with ChangeNotifier {
         print(
           '💥  Razorpay ERROR: code=${response.code} message=${response.message}',
         );
-        // Still poll in case of late capture
-        await _pollPaymentStatus(orderId);
-        completer.complete(false);
+        
+        // Even on Razorpay error, poll backend once to check if payment was captured
+        // ignore: avoid_print
+        print('🔍  Checking backend despite Razorpay error...');
+        final backendCheck = await _pollPaymentStatus(orderId);
+        
+        // Only complete with true if backend confirms success
+        completer.complete(backendCheck);
       });
 
       _razorpay!.on(Razorpay.EVENT_EXTERNAL_WALLET, (
@@ -126,9 +144,12 @@ class WalletProvider with ChangeNotifier {
       ) async {
         // ignore: avoid_print
         print('👛  Razorpay EXTERNAL WALLET: ${response.walletName}');
-        // External wallet chosen; proceed to poll backend
-        final ok = await _pollPaymentStatus(orderId);
-        completer.complete(ok);
+        
+        // External wallet - must poll backend to confirm
+        // ignore: avoid_print
+        print('🔍  External wallet used, polling backend...');
+        final backendResult = await _pollPaymentStatus(orderId);
+        completer.complete(backendResult);
       });
 
       // 2) Open Razorpay checkout
@@ -149,13 +170,27 @@ class WalletProvider with ChangeNotifier {
       _razorpay!.open(options);
 
       final success = await completer.future.timeout(
-        const Duration(minutes: 16),
-        onTimeout: () => false,
+        const Duration(minutes: 12), // Increased timeout slightly
+        onTimeout: () {
+          // ignore: avoid_print
+          print('⏰  Payment timeout - still refreshing wallet balance');
+          return false;
+        },
       );
 
-      // Refresh data regardless
-      await loadWalletBalance();
-      await loadTransactions();
+      // Always refresh wallet data after payment attempt, regardless of success
+      try {
+        // ignore: avoid_print
+        print('🔄  Refreshing wallet data after payment attempt');
+        await loadWalletBalance();
+        await loadTransactions();
+        // ignore: avoid_print
+        print('✅  Wallet data refreshed successfully');
+      } catch (e) {
+        // ignore: avoid_print
+        print('❌  Error refreshing wallet data: $e');
+      }
+      
       return success;
     } catch (e) {
       // ignore: avoid_print
@@ -169,45 +204,72 @@ class WalletProvider with ChangeNotifier {
 
   Future<bool> _pollPaymentStatus(String orderId) async {
     if (_apiService == null) return false;
-    const totalDuration = Duration(minutes: 15);
+    const totalDuration = Duration(minutes: 10); // Changed to 10 minutes as requested
     const interval = Duration(seconds: 3);
     final started = DateTime.now();
+    int pollCount = 0;
 
     // ignore: avoid_print
     print(
-      '⏰  Starting payment status polling for 15 minutes (every 3 seconds)',
+      '⏰  Starting payment status polling for 10 minutes (every 3 seconds)',
     );
 
     while (DateTime.now().difference(started) < totalDuration) {
+      pollCount++;
       try {
         final status = await _apiService!.getPaymentStatus(orderId);
         final dynamic raw = status['status'];
         final s = (raw == null ? null : raw.toString().toUpperCase());
+        
+        // Add extra logging for debugging
         // ignore: avoid_print
-        print('📡  Polled status: $status');
+        print('📊 Full API response: $status');
+        // ignore: avoid_print
+        print('📡  Poll #$pollCount - Status: $status');
 
+        // STRICT: Only accept "SUCCESS" status from backend
+        // Backend code shows it sets status to "SUCCESS" only when payment is truly successful
         if (s == 'SUCCESS') {
           // ignore: avoid_print
-          print('✅  Payment successful!');
+          print('✅  Payment verified SUCCESS by backend! Status: $s');
+          // Force refresh wallet balance immediately after successful payment
+          try {
+            await loadWalletBalance();
+            await loadTransactions();
+            // ignore: avoid_print
+            print('💰  Wallet balance refreshed after successful payment');
+          } catch (e) {
+            // ignore: avoid_print
+            print('⚠️  Error refreshing wallet: $e');
+          }
           return true;
         }
-        if (s == 'FAILED' || s == 'CANCELLED' || s == 'EXPIRED') {
+        
+        // Check for failure conditions (be strict about failure states)
+        if (s == 'FAILED' || s == 'CANCELLED' || s == 'EXPIRED' || s == 'REJECTED' || s == 'PENDING') {
+          if (s == 'PENDING') {
+            // ignore: avoid_print
+            print('⏳  Payment still PENDING (status: $s), continuing to poll...');
+          } else {
+            // ignore: avoid_print
+            print('❌  Payment FAILED (status: $s), stopping polling');
+            return false;
+          }
+        } else {
           // ignore: avoid_print
-          print('❌  Payment failed/cancelled/expired');
-          return false;
+          print('⚠️  Unknown payment status: $s, continuing to poll...');
         }
-
-        // ignore: avoid_print
-        print('⏳  Payment still pending, waiting 3 seconds...');
       } catch (e) {
         // ignore: avoid_print
-        print('⚠️  Polling error: $e');
+        print('⚠️  Polling error on attempt #$pollCount: $e');
       }
+      
+      // Wait before next poll
       await Future.delayed(interval);
     }
 
     // ignore: avoid_print
-    print('⏰  Polling timeout after 15 minutes');
+    print('⏰  Polling timeout after 10 minutes ($pollCount attempts)');
     return false;
   }
 
@@ -222,7 +284,7 @@ class WalletProvider with ChangeNotifier {
     _clearError();
 
     try {
-      final res = await _apiService!.requestWithdrawal(
+      await _apiService!.requestWithdrawal(
         amount,
         bankDetailsId,
         withdrawalMethod,

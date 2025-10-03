@@ -47,21 +47,60 @@ class _AddMoneyScreenState extends State<AddMoneyScreen> {
       );
 
       if (success && mounted) {
-        // Refresh user data to get updated wallet balance
+        // Double-check wallet balance to ensure money was actually added
         await authProvider.refreshUserData();
-
+        await walletProvider.loadWalletBalance();
+        
+        // Final verification: Check wallet balance from provider
+        final walletBalance = walletProvider.walletBalance;
+        final currentBalance = walletBalance?['walletBalance'] ?? 0;
+        // ignore: avoid_print
+        print('💰  Final wallet balance check: $currentBalance');
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Money added to wallet successfully!'),
+            content: Text('✅ Payment successful! Money added to wallet.'),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
           ),
         );
         Navigator.of(context).pop();
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(walletProvider.error ?? 'Failed to add money'),
+            content: Row(
+              children: [
+                Expanded(
+                  child: Text(walletProvider.error ?? 'Payment failed or still processing. Backend verification failed.'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    // Try to refresh wallet balance in case payment was successful but polling failed
+                    await walletProvider.loadWalletBalance();
+                    await walletProvider.loadTransactions();
+                    await authProvider.refreshUserData();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Wallet refreshed. Check if money was added.'),
+                        backgroundColor: Colors.blue,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    'Refresh',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
             backgroundColor: Colors.red,
+            duration: Duration(seconds: 8),
+            action: SnackBarAction(
+              label: 'Dismiss',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
           ),
         );
       }
