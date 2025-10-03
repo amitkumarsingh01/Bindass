@@ -93,19 +93,38 @@ class SimpleRazorpayService:
 
     async def get_order_status(self, razorpay_order_id: str) -> dict:
         """Get Razorpay order status"""
-        async with httpx.AsyncClient(timeout=30.0, auth=self._get_auth()) as client:
-            response = await client.get(f"{self.orders_url}/{razorpay_order_id}")
-            if response.status_code not in (200, 201):
-                raise Exception(f"Failed to fetch order: {response.status_code}")
-            return response.json()
+        try:
+            async with httpx.AsyncClient(timeout=30.0, auth=self._get_auth()) as client:
+                url = f"{self.orders_url}/{razorpay_order_id}"
+                logger.info(f"🔍 Fetching Razorpay order status from: {url}")
+                response = await client.get(url)
+                if response.status_code not in (200, 201):
+                    logger.error(f"❌ Razorpay order status API error: {response.status_code} - {response.text}")
+                    raise Exception(f"Failed to fetch order: {response.status_code}")
+                data = response.json()
+                logger.info(f"✅ Razorpay order data: {data}")
+                return data
+        except Exception as e:
+            logger.error(f"💥 Error fetching Razorpay order status: {e}")
+            raise
 
     async def get_order_payments(self, razorpay_order_id: str) -> list:
         """Get payments for an order"""
-        async with httpx.AsyncClient(timeout=30.0, auth=self._get_auth()) as client:
-            response = await client.get(f"{self.orders_url}/{razorpay_order_id}/payments")
-            if response.status_code in (200, 201):
-                data = response.json()
-                return data.get("items", [])
+        try:
+            async with httpx.AsyncClient(timeout=30.0, auth=self._get_auth()) as client:
+                url = f"{self.orders_url}/{razorpay_order_id}/payments"
+                logger.info(f"🔍 Fetching Razorpay payments from: {url}")
+                response = await client.get(url)
+                if response.status_code in (200, 201):
+                    data = response.json()
+                    payments = data.get("items", [])
+                    logger.info(f"✅ Razorpay payments: {payments}")
+                    return payments
+                else:
+                    logger.error(f"❌ Razorpay payments API error: {response.status_code} - {response.text}")
+                    return []
+        except Exception as e:
+            logger.error(f"💥 Error fetching Razorpay payments: {e}")
             return []
 
 # Global service instance
@@ -263,28 +282,80 @@ async def get_simple_payment_status(order_id: str):
                 detail="Razorpay order ID missing"
             )
         
-        # Get Razorpay order status
+        # Get Razorpay order status and payments
         order_data = await simple_razorpay.get_order_status(razorpay_order_id)
         payments_list = await simple_razorpay.get_order_payments(razorpay_order_id)
         
-        # Determine status
+        # Log for debugging
+        logger.info(f"Razorpay order status for {razorpay_order_id}: {order_data.get('status')}")
+        logger.info(f"Razorpay payments for {razorpay_order_id}: {[p.get('status') for p in payments_list]}")
+        
+        # Add a small delay to allow Razorpay to process payment data
+        # Sometimes payments are captured but not immediately reflected in API
+        import asyncio
+        await asyncio.sleep(1)
+        
+        # Re-fetch payments after small delay if no payments found initially
+        if not payments_list and order_data.get("status") in ["attempted", "paid"]:
+            logger.info(f"🔄 No payments found initially, re-fetching after delay...")
+            payments_list = await simple_razorpay.get_order_payments(razorpay_order_id)
+            if payments_list:
+                logger.info(f"✅ Found payments on retry: {len(payments_list)} payments")
+        
+        # Determine status - be more thorough in checking
         status_value = "PENDING"
         order_status = order_data.get("status", "").lower()
         
+        # Check order status first
         if order_status == "paid":
             status_value = "SUCCESS"
+            logger.info(f"Order marked as paid for {razorpay_order_id}")
         elif order_status == "cancelled":
             status_value = "CANCELLED"
+            logger.info(f"Order cancelled for {razorpay_order_id}")
+        elif order_status == "attempted":
+            # Order attempted but check payments
+            logger.info(f"Order attempted for {razorpay_order_id}, checking payments...")
         
-        # Check individual payments
+        # Check individual payments (this is more reliable than order status)
         for payment_item in payments_list:
             payment_status = payment_item.get("status", "").lower()
-            if payment_status == "captured":
+            payment_id = payment_item.get("id", "unknown")
+            amount = payment_item.get("amount", 0)
+            
+            logger.info(f"💳 Payment {payment_id}: status={payment_status}, amount={amount}")
+            
+            # Success states (any of these means payment successful)
+            if payment_status in ["captured", "authorized"]:
                 status_value = "SUCCESS"
+                logger.info(f"✅ Payment {payment_id} successful (status: {payment_status}) for order {razorpay_order_id}")
                 break
+                
+            # Failure states
             elif payment_status == "failed":
                 status_value = "FAILED"
+                logger.info(f"❌ Payment {payment_id} failed for order {razorpay_order_id}")
                 break
+                
+            elif payment_status == "refunded":
+                status_value = "FAILED"
+                logger.info(f"💰 Payment {payment_id} refunded for order {razorpay_order_id}")
+                break
+                
+            elif payment_status == "cancelled":
+                status_value = "CANCELLED"
+                logger.info(f"🚫 Payment {payment_id} cancelled for order {razorpay_order_id}")
+                break
+                
+            # Pending states - continue checking
+            elif payment_status in ["created", "attempted", "pending"]:
+                logger.info(f"⏳ Payment {payment_id} still processing (status: {payment_status})")
+                continue
+        
+        # If we didn't find any payments but order is marked as paid
+        if not payments_list and order_status == "paid":
+            status_value = "SUCCESS"
+            logger.info(f"✅ Order {razorpay_order_id} marked as paid but no payments found")
         
         # Update our record
         await database.simple_payments.update_one(
@@ -303,19 +374,23 @@ async def get_simple_payment_status(order_id: str):
         
         # If successful, credit wallet
         if status_value == "SUCCESS" and payment.get("status") != "SUCCESS":
-            logger.info(f"Payment successful, crediting wallet for order {order_id}")
+            logger.info(f"💰 Payment successful, crediting wallet for order {order_id}")
             await credit_user_wallet(payment)
         elif status_value == "SUCCESS" and payment.get("status") == "SUCCESS":
-            logger.info(f"Payment already processed for order {order_id}")
+            logger.info(f"✅ Payment already processed for order {order_id}")
         else:
-            logger.info(f"Payment not successful yet for order {order_id}, status: {status_value}")
+            logger.info(f"⏳ Payment not successful yet for order {order_id}, status: {status_value}")
         
-        return SimplePaymentStatus(
+        # Return detailed response for debugging
+        final_status = SimplePaymentStatus(
             order_id=order_id,
             status=status_value,
             amount=payment.get("amount", 0),
             message=f"Payment {status_value.lower()}"
         )
+        
+        logger.info(f"📤 Returning payment status: order_id={order_id}, status={status_value}")
+        return final_status
         
     except HTTPException:
         raise
@@ -325,6 +400,7 @@ async def get_simple_payment_status(order_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get payment status: {str(e)}"
         )
+
 
 async def credit_user_wallet(payment: dict):
     """Credit user's wallet when payment is successful"""
@@ -350,13 +426,13 @@ async def credit_user_wallet(payment: dict):
         logger.info(f"Updating balance: {current_balance} -> {new_balance}")
         
         await database.users.update_one(
-            {"_id": user_id},
+            {"_id": user["_id"]},
             {"$set": {"walletBalance": new_balance}}
         )
         
         # Create wallet transaction
         wallet_transaction = {
-            "userId": user_id,
+            "userId": user["_id"],  # Use the resolved user's MongoDB _id
             "transactionId": f"SP_{payment['order_id']}",
             "transactionType": "credit",
             "amount": amount,
@@ -369,8 +445,8 @@ async def credit_user_wallet(payment: dict):
         }
         
         result = await database.wallet_transactions.insert_one(wallet_transaction)
-        logger.info(f"Wallet transaction created with ID: {result.inserted_id}")
-        logger.info(f"Successfully credited {amount} to user {user_id} for order {payment['order_id']}")
+        logger.info(f"📝 Wallet transaction created with ID: {result.inserted_id}")
+        logger.info(f"✅ Successfully credited ₹{amount} to user {user_identifier} for order {payment['order_id']}")
         
     except Exception as e:
         logger.error(f"Error crediting wallet: {e}")

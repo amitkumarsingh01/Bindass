@@ -63,9 +63,9 @@ async def get_wallet_transactions(
 @router.post("/add-money")
 async def add_money_to_wallet(
     payload: dict,
-    current_user: User = Depends(get_user_with_password)
+    current_user: User = Depends(resolve_user)
 ):
-    """Add money to user's wallet - minimal validation."""
+    """Add money to user's wallet - minimal validation. No password required."""
     database = get_database()
     amount = 0.0
     description = "Wallet top-up"
