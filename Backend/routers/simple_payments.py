@@ -406,24 +406,32 @@ async def credit_user_wallet(payment: dict):
     """Credit user's wallet when payment is successful"""
     try:
         database = get_database()
-        user_id = payment["user_id"]
+        # Use user_identifier (shreyasmp.7) instead of MongoDB ObjectId
+        user_identifier = payment.get("user_identifier", payment.get("user_id"))
         amount = payment["amount"]
         
-        logger.info(f"Starting wallet credit for user {user_id}, amount {amount}")
+        logger.info(f"💰 Starting wallet credit for user identifier {user_identifier}, amount {amount}")
         
-        # Get user
-        user = await database.users.find_one({"_id": user_id})
+        # Resolve user by identifier (userId, email, or phoneNumber)
+        user = await database.users.find_one({
+            "$or": [
+                {"userId": user_identifier},
+                {"email": user_identifier},
+                {"phoneNumber": user_identifier}
+            ]
+        })
+        
         if not user:
-            logger.error(f"User not found: {user_id}")
+            logger.error(f"❌ User not found for identifier: {user_identifier}")
             return
         
-        logger.info(f"User found: {user.get('email', 'no email')}")
+        logger.info(f"✅ User found: {user.get('email', 'no email')} (ID: {user['_id']})")
         
         # Update wallet balance
         current_balance = user.get("walletBalance", 0.0)
         new_balance = float(current_balance) + float(amount)
         
-        logger.info(f"Updating balance: {current_balance} -> {new_balance}")
+        logger.info(f"💳 Updating balance: {current_balance} -> {new_balance}")
         
         await database.users.update_one(
             {"_id": user["_id"]},
